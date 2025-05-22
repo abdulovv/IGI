@@ -1,0 +1,18 @@
+Capital letters: ['T', 'F', 'C', 'S', 'D', 'F', 'G', 'H', 'F', 'D', 'F', 'G', 'H']
+Modified text: The rapid advancementprivetkakdela of technology has advancementprivetkakdela how we communicate, work, and entertain ourselves!
+From the invention of: the printing press:-f-) to the:) rise of artificial intelligence, innovations have consistently reshaped human civilization.
+Consider the internet, a tool that connects][}{ billions globally?
+SDFGH. FDFGH
+:---df---)] :------))) :----]]  ;] :) ;--) ;--
+
+qqqqqqabc abc abc ccbbaa cba acb acba  qqq qqq aaabaaccc qqq qqq acb abcbacbabc
+
+Max length words count: 2
+Words followed by punctuation: ['communicate', 'work', 'intelligence', 'civilization', 'internet', 'SDFGH']
+Longest word ending with 'e': intelligence
+narrative: 2
+interrogative: 1
+Incentives: 1
+Average sentence length (words): 12.00
+Average word length (characters): 6.78
+Smileys count: 7
