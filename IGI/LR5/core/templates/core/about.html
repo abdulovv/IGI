@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}О компании{% endblock %}
+
+{% block content %}
+    <h1>О компании</h1>
+    {% if company_info %}
+        <p>{{ company_info.about_us }}</p>
+        <p>Адрес: {{ company_info.address }}</p>
+        <p>Телефон: {{ company_info.phone }}</p>
+        <p>Email: {{ company_info.email }}</p>
+        {% else %}
+        <p>Информация о компании отсутствует.</p>
+    {% endif %}
+{% endblock %}

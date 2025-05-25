@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Зоомагазин{% endblock %}</title>
+    <style>
+        /* Пример стилей (можно добавить свои) */
+        #sidebar {
+            float: left;
+            width: 200px;
+        }
+        #main {
+            margin-left: 210px;
+        }
+        .product-list {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .product-item {
+            width: 200px;
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .product-detail {
+            /* Стили для страницы детализации товара */
+        }
+        /* Добавьте стили для навигации, футера и т.д. */
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>Зоомагазин</h1>
+        <ul>
+            <li><a href="{% url 'core:home' %}">Главная</a></li>
+            <li><a href="{% url 'core:about' %}">О компании</a></li>
+            <li><a href="{% url 'shop:product_list' %}">Товары</a></li>
+            <li><a href="{% url 'suppliers:supplier_list' %}">Поставщики</a></li>
+            <li><a href="{% url 'clients:client_list' %}">Клиенты</a></li>
+            <li><a href="{% url 'sales:sale_list' %}">Продажи</a></li>
+            <li><a href="{% url 'core:news_list' %}">Новости</a></li>
+        </ul>
+    </div>
+
+    <div id="content">
+        {% block content %}
+            {% endblock %}
+    </div>
+
+    <div id="footer">
+        </div>
+</body>
+</html>

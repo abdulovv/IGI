@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+    <div class="product-detail">
+        <h1>{{ product.name }}</h1>
+        <p>Артикул: {{ product.article }}</p>
+        <p>Цена: {{ product.price }} руб.</p>
+        <p>Количество: {{ product.quantity }}</p>
+        <p>Категория: {{ product.category.name }}</p>
+        <p>Поставщик: {{ product.supplier.name }}</p>
+        </div>
+{% endblock %}
