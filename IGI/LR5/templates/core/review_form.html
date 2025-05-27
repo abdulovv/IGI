@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}Редактировать отзыв{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Редактировать ваш отзыв о товаре "{{ review.product.name }}"</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+        <a href="{% url 'core:product-detail' review.product.pk %}" class="btn btn-secondary">Отмена</a>
+    </form>
+</div>
+{% endblock %} 

@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'core:product-list' %}">Каталог</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'core:product-list' %}?category={{ product.category.id }}">{{ product.category.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Изображение товара -->
+        <div class="col-md-6">
+            {% if product.image %}
+            <img src="{{ product.image.url }}" class="img-fluid rounded" alt="{{ product.name }}">
+            {% endif %}
+        </div>
+
+        <!-- Информация о товаре -->
+        <div class="col-md-6">
+            <h1 class="mb-3">{{ product.name }}</h1>
+            {% if user.is_superuser %}
+            <p class="text-muted">Артикул: {{ product.article }}</p>
+            {% endif %}
+            
+            <div class="mb-3">
+                {% if product.rating %}
+                <span class="text-warning h4">
+                    {% for i in "12345"|make_list %}
+                    {% if forloop.counter <= product.rating %}★{% else %}☆{% endif %}
+                    {% endfor %}
+                </span>
+                <span class="text-muted">({{ product.reviews_count }} отзывов)</span>
+                {% else %}
+                <span class="text-muted">Нет отзывов</span>
+                {% endif %}
+            </div>
+
+            <h2 class="h1 mb-3">{{ product.price }} руб.</h2>
+            
+            {% if user.is_superuser %}
+            <div class="alert {% if product.quantity > 0 %}alert-success{% else %}alert-danger{% endif %}">
+                В наличии: {{ product.quantity }} шт.
+            </div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="h5 mb-0">Информация для администратора</h3>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Поставщик:</dt>
+                        <dd class="col-sm-8">{{ product.supplier.name }}</dd>
+                        <dt class="col-sm-4">Телефон поставщика:</dt>
+                        <dd class="col-sm-8">{{ product.supplier.phone }}</dd>
+                        <dt class="col-sm-4">Адрес поставщика:</dt>
+                        <dd class="col-sm-8">{{ product.supplier.address }}</dd>
+                    </dl>
+                </div>
+            </div>
+            <a href="{% url 'admin:core_product_change' product.id %}" class="btn btn-outline-primary mb-4">
+                Редактировать товар
+            </a>
+            {% else %}
+            <div class="alert {% if product.quantity > 0 %}alert-success{% else %}alert-danger{% endif %}">
+                {% if product.quantity > 0 %}В наличии{% else %}Нет в наличии{% endif %}
+            </div>
+            {% if product.quantity > 0 and user.is_authenticated and not user.is_superuser %}
+            <form method="post" action="{% url 'core:add-to-cart' product.id %}" class="mb-4">
+                {% csrf_token %}
+                <div class="input-group">
+                    <input type="number" name="quantity" class="form-control" value="1" min="1" max="{{ product.quantity }}">
+                    <button type="submit" class="btn btn-primary">Добавить в корзину</button>
+                </div>
+            </form>
+            {% endif %}
+            {% endif %}
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="h5 mb-0">Описание</h3>
+                </div>
+                <div class="card-body">
+                    {{ product.description|linebreaks }}
+                </div>
+            </div>
+
+            {% if product.specifications %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="h5 mb-0">Характеристики</h3>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        {% for spec in product.specifications %}
+                        <dt class="col-sm-4">{{ spec.name }}</dt>
+                        <dd class="col-sm-8">{{ spec.value }}</dd>
+                        {% endfor %}
+                    </dl>
+                </div>
+            </div>
+            {% endif %}
+
+            <p class="card-text"><strong>Артикул:</strong> {{ product.article }}</p>
+            <p class="card-text"><strong>Категория:</strong> <a href="{% url 'core:product-list' %}?category={{ product.category.id }}">{{ product.category.name }}</a></p>
+            <p class="card-text"><strong>Поставщики:</strong>
+                {% for supplier in product.suppliers.all %}
+                    {{ supplier.name }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    Нет информации
+                {% endfor %}
+            </p>
+            <p class="card-text"><strong>В наличии:</strong> <span id="product-quantity-display">{{ product.quantity }}</span> шт.</p>
+
+            {% if request.user.is_staff or request.user.is_superuser %}
+                <hr>
+                <h5>Изменить количество на складе:</h5>
+                <form method="post" action="" class="form-inline mb-3">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        {{ quantity_form.quantity }}
+                        <button type="submit" class="btn btn-sm btn-warning ms-2">Обновить кол-во</button>
+                    </div>
+                    {% if quantity_form.quantity.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in quantity_form.quantity.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </form>
+                <hr>
+            {% endif %}
+
+            <p class="card-text fs-4"><strong>Цена:</strong> {{ product.price|floatformat:2 }} руб.</p>
+        </div>
+    </div>
+
+    <!-- Отзывы -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h2>Отзывы</h2>
+            {% if user.is_authenticated and not user.is_superuser %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3 class="h5">Оставить отзыв</h3>
+                    <form method="post" action="{% url 'core:add-review' product.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="rating" class="form-label">Оценка</label>
+                            <select class="form-select" id="rating" name="rating" required>
+                                <option value="5">★★★★★ Отлично</option>
+                                <option value="4">★★★★☆ Хорошо</option>
+                                <option value="3">★★★☆☆ Нормально</option>
+                                <option value="2">★★☆☆☆ Плохо</option>
+                                <option value="1">★☆☆☆☆ Ужасно</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="text" class="form-label">Ваш отзыв</label>
+                            <textarea class="form-control" id="text" name="text" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Отправить отзыв</button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            {% for review in reviews %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <span class="text-warning">
+                                {% for i in "12345"|make_list %}
+                                {% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}
+                                {% endfor %}
+                            </span>
+                            <span class="ms-2 text-muted">{{ review.created_at|date:"d.m.Y H:i" }} ({{user_timezone}})</span>
+                        </div>
+                        <span class="text-muted">{{ review.customer.get_full_name|default:review.customer.username }}</span>
+                    </div>
+                    <p class="card-text mb-0">{{ review.text|linebreaks }}</p>
+                    {% if request.user == review.customer %}
+                    <div class="mt-2">
+                        <a href="{% url 'core:review-edit' review.pk %}" class="btn btn-sm btn-outline-primary">Редактировать</a>
+                        <a href="{% url 'core:review-delete' review.pk %}" class="btn btn-sm btn-outline-danger ms-2">Удалить</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-info">
+                Пока нет отзывов. {% if user.is_authenticated and not user.is_superuser %}Будьте первым!{% endif %}
+            </div>
+            {% endfor %}
+
+            {% if reviews.has_other_pages %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if reviews.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ reviews.previous_page_number }}">Предыдущая</a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in reviews.paginator.page_range %}
+                    <li class="page-item {% if reviews.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+
+                    {% if reviews.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ reviews.next_page_number }}">Следующая</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

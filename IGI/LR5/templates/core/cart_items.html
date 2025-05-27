@@ -1,0 +1,37 @@
+{% for item in cart_items %}
+<div class="cart-item">
+    <div class="item-image">
+        {% if item.product.image %}
+            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+        {% else %}
+            <div class="no-image">Нет изображения</div>
+        {% endif %}
+    </div>
+    
+    <div class="item-details">
+        <h3>
+            <a href="{% url 'core:product-detail' item.product.id %}">{{ item.product.name }}</a>
+        </h3>
+        <p class="item-article">Арт. {{ item.product.article }}</p>
+        
+        <div class="item-controls">
+            <div class="quantity-controls">
+                <button onclick="updateCartItem({{ item.id }}, 'decrease')"
+                        {% if item.quantity == 1 %}disabled{% endif %}>-</button>
+                <span class="quantity">{{ item.quantity }}</span>
+                <button onclick="updateCartItem({{ item.id }}, 'increase')"
+                        {% if item.quantity >= item.product.quantity %}disabled{% endif %}>+</button>
+            </div>
+            
+            <div class="price-info">
+                <div class="total-price">{{ item.total_price }} руб.</div>
+                <div class="unit-price">{{ item.product.price }} руб. × {{ item.quantity }}</div>
+            </div>
+            
+            <button class="remove-button" onclick="updateCartItem({{ item.id }}, 'remove')">
+                Удалить
+            </button>
+        </div>
+    </div>
+</div>
+{% endfor %} 

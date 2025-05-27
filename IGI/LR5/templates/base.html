@@ -2,52 +2,172 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Зоомагазин{% endblock %}</title>
+    {% load static %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <style>
-        /* Пример стилей (можно добавить свои) */
-        #sidebar {
-            float: left;
-            width: 200px;
+        .navbar {
+            background-color: #f8f9fa;
+            padding: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        #main {
-            margin-left: 210px;
+        .navbar-nav {
+            gap: 0.5rem;
         }
-        .product-list {
+        .navbar-nav .nav-link {
+            color: #333;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        .navbar-nav .nav-link:hover {
+            background-color: #e9ecef;
+            color: #007bff;
+        }
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .user-nav {
+            margin-left: auto;
             display: flex;
-            flex-wrap: wrap;
+            align-items: center;
         }
-        .product-item {
-            width: 200px;
-            margin: 10px;
-            padding: 10px;
-            border: 1px solid #ccc;
+        .user-nav .nav-link {
+            white-space: nowrap;
         }
-        .product-detail {
-            /* Стили для страницы детализации товара */
+        .nav-divider {
+            width: 1px;
+            height: 24px;
+            background-color: #dee2e6;
+            margin: 0 0.5rem;
         }
-        /* Добавьте стили для навигации, футера и т.д. */
+        @media (max-width: 991.98px) {
+            .nav-divider {
+                display: none;
+            }
+            .user-nav {
+                margin-top: 1rem;
+                padding-top: 1rem;
+                border-top: 1px solid #dee2e6;
+            }
+        }
     </style>
 </head>
 <body>
-    <div id="header">
-        <h1>Зоомагазин</h1>
-        <ul>
-            <li><a href="{% url 'core:home' %}">Главная</a></li>
-            <li><a href="{% url 'core:about' %}">О компании</a></li>
-            <li><a href="{% url 'shop:product_list' %}">Товары</a></li>
-            <li><a href="{% url 'suppliers:supplier_list' %}">Поставщики</a></li>
-            <li><a href="{% url 'clients:client_list' %}">Клиенты</a></li>
-            <li><a href="{% url 'sales:sale_list' %}">Продажи</a></li>
-            <li><a href="{% url 'core:news_list' %}">Новости</a></li>
-        </ul>
-    </div>
-
-    <div id="content">
-        {% block content %}
-            {% endblock %}
-    </div>
-
-    <div id="footer">
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'content:home' %}">Главная</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'content:about' %}">О компании</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'content:news-list' %}">Новости</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'core:product-list' %}">Каталог</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'content:faq' %}">FAQ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'content:contacts' %}">Контакты</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'content:vacancies' %}">Вакансии</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'content:review-list' %}">Отзывы</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'content:promotion_list' %}">Акции и промокоды</a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav user-nav">
+                    {% if user.is_authenticated %}
+                        {% if user.is_superuser %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'admin:index' %}">Админ-панель</a>
+                            </li>
+                            <div class="nav-divider"></div>
+                        {% endif %}
+                        {% if user.is_staff %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'core:sales-list' %}">Продажи</a>
+                            </li>
+                            <div class="nav-divider"></div>
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'core:cart' %}">Корзина</a>
+                            </li>
+                            <div class="nav-divider"></div>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:profile' %}">Профиль</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:logout' %}">Выход</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:login' %}">Вход</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:register' %}">Регистрация</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
         </div>
+    </nav>
+
+    <main class="container py-4">
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer class="bg-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="list-inline mb-0">
+                        <li class="list-inline-item">
+                            <a href="{% url 'content:privacy' %}" class="text-muted">Политика конфиденциальности</a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="{% url 'content:contacts' %}" class="text-muted">Контакты</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="text-muted mb-0">&copy; {% now "Y" %} Зоомагазин. Все права защищены.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

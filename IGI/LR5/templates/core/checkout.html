@@ -1,0 +1,125 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Оформление заказа{% endblock %}
+
+{% block content %}
+<div class="checkout-page">
+    <h1>Оформление заказа</h1>
+    
+    <div class="checkout-content">
+        <div class="order-form">
+            <form method="post" id="checkout-form">
+                {% csrf_token %}
+                
+                <div class="form-section">
+                    <h2>Контактная информация</h2>
+                    <div class="form-group">
+                        <label for="email">Email*</label>
+                        <input type="email" id="email" name="email" value="{{ user.email }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Телефон*</label>
+                        <input type="tel" id="phone" name="phone" value="{{ user.profile.phone }}" required>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h2>Адрес доставки</h2>
+                    <div class="form-group">
+                        <label for="shipping_address">Адрес*</label>
+                        <textarea id="shipping_address" name="shipping_address" required>{{ user.profile.address }}</textarea>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h2>Комментарий к заказу</h2>
+                    <div class="form-group">
+                        <textarea id="comment" name="comment" placeholder="Дополнительная информация по заказу"></textarea>
+                    </div>
+                </div>
+                
+                {% if promo_code %}
+                    <input type="hidden" name="promo_code" value="{{ promo_code }}">
+                {% endif %}
+                
+                <input type="hidden" name="client_timezone" id="client-timezone-input">
+                
+                <button type="submit" class="button submit-button">Подтвердить заказ</button>
+            </form>
+        </div>
+        
+        <div class="order-summary">
+            <h2>Ваш заказ</h2>
+            
+            <div class="order-items">
+                {% for item in cart_items %}
+                <div class="order-item">
+                    <div class="item-info">
+                        <h3>{{ item.product.name }}</h3>
+                        <p class="item-article">Арт. {{ item.product.article }}</p>
+                    </div>
+                    <div class="item-quantity">
+                        {{ item.quantity }} шт.
+                    </div>
+                    <div class="item-price">
+                        {{ item.total_price }} руб.
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="order-totals">
+                <div class="subtotal">
+                    <span>Товары:</span>
+                    <span>{{ cart.total_price }} руб.</span>
+                </div>
+                
+                {% if discount %}
+                <div class="discount">
+                    <span>Скидка:</span>
+                    <span>-{{ discount }} руб.</span>
+                </div>
+                {% endif %}
+                
+                {# <div class="shipping">
+                    <span>Доставка:</span>
+                    <span>0 руб.</span>
+                </div> #} {# Закомментируем блок доставки #}
+                
+                <div class="total">
+                    <span>Итого:</span>
+                    {# Убедимся, что переменная total_with_discount или cart.total_price используется #}
+                    {% if total_with_discount %}
+                        <span>{{ total_with_discount|floatformat:2 }} руб.</span>
+                    {% else %}
+                        <span>{{ cart.total_price|floatformat:2 }} руб.</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const timezoneInput = document.getElementById('client-timezone-input');
+    if (timezoneInput) {
+        timezoneInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    }
+
+    const checkoutForm = document.getElementById('checkout-form');
+    if (checkoutForm) {
+        checkoutForm.addEventListener('submit', function() {
+            // Ensure the timezone is set just before submission,
+            // in case it wasn't set on DOMContentLoaded for some reason.
+            if (timezoneInput && !timezoneInput.value) {
+                 timezoneInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Отзывы{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Отзывы наших клиентов</h1>
+                {% if user.is_authenticated and not user.is_staff and not user.is_superuser %}
+                <a href="{% url 'content:review-create' %}" class="btn btn-primary">Оставить отзыв</a>
+                {% endif %}
+            </div>
+
+            {% for review in reviews %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="card-title">{{ review.user.get_full_name|default:review.user.username }}</h5>
+                            <div class="text-warning">
+                                {% for i in "12345"|make_list %}
+                                {% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ review.created_at|date:"d.m.Y" }}</small>
+                    </div>
+                    <p class="card-text">{{ review.text|linebreaks }}</p>
+                    {% if review.image %}
+                    <img src="{{ review.image.url }}" alt="Фото к отзыву" class="img-fluid rounded" style="max-height: 200px;">
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-info">
+                Пока нет отзывов. {% if user.is_authenticated %}Будьте первым!{% endif %}
+            </div>
+            {% endfor %}
+
+            {% if is_paginated %}
+            <nav aria-label="Навигация по отзывам">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">&laquo; Первая</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Предыдущая</a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Следующая</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Последняя &raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

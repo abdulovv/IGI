@@ -1,0 +1,9 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<div class="auth-container">
+  <h2>Выход выполнен</h2>
+  <p>Вы успешно вышли из системы.</p>
+  <a href="{% url 'login' %}" class="button">Войти снова</a>
+</div>
+{% endblock %}

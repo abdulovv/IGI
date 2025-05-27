@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+   <head>
+      {% block title %}
+      <title>Zoo Shop</title>
+      {% endblock %}
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      {% load static %}
+      <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+   </head>
+   <body>
+      <header class="header">
+      <div class="container">
+        <nav class="nav">
+            <ul class="menu-left">
+                <li><a href="{% url 'index' %}" class="menu-button">Главная страница</a></li>
+                <li><a href="{% url 'catalog' %}" class="menu-button">Каталог</a></li>
+            </ul>
+            <div class="logo">
+                <h1>Zoo Shop</h1>
+            </div>
+            <ul class="menu-right">
+                {% if user.is_authenticated %}
+                    <li>
+                        <span class="profile-button">{{user.get_username}}</span>
+                        <div class="submenu">
+                            <ul>
+                                <li><a href="#">Профиль</a></li>
+                                <li>
+                                    <form method="post" action="{% url 'logout' %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="button">Выход</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                {% else %}
+                    <li><a href="{% url 'login' %}" class="button">Вход</a></li>
+                {% endif %}
+                <li><a href="#" class="button">Корзина</a></li>
+            </ul>
+        </nav>
+      </div>
+    </header>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Zoo Shop. Все права защищены.</p>
+        </div>
+    </footer>
+   </body>
+</html>

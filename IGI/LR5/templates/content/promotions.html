@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Акции и промокоды{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Акции и специальные предложения</h1>
+    
+    <div class="row">
+        {% for promotion in promotions %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                {% if promotion.image %}
+                    <img src="{{ promotion.image.url }}" class="card-img-top" alt="{{ promotion.title }}">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ promotion.title }}</h5>
+                    <p class="card-text">{{ promotion.description }}</p>
+                    {% if promotion.promo %}
+                        <div class="alert alert-info">
+                            <strong>Промокод:</strong> {{ promotion.promo.code }}<br>
+                            <strong>Скидка:</strong> {{ promotion.discount_display }}<br>
+                            <small class="text-muted">{{ promotion.period_display }}</small>
+                        </div>
+                        {% if promotion.promo.min_order_amount > 0 %}
+                            <p class="text-muted">
+                                Минимальная сумма заказа: {{ promotion.promo.min_order_amount }} руб.
+                            </p>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                {% if promotion.promo and promotion.promo.is_active %}
+                    <div class="card-footer bg-success text-white">
+                        <small>Акция активна</small>
+                    </div>
+                {% else %}
+                    <div class="card-footer bg-secondary text-white">
+                        <small>Акция неактивна</small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                В данный момент нет активных акций
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

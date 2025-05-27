@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}Удалить отзыв{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Вы уверены, что хотите удалить ваш отзыв о товаре "{{ review.product.name }}"?</h2>
+    <p><strong>Оценка:</strong> {{ review.get_rating_display }}</p>
+    <p><strong>Текст:</strong></p>
+    <blockquote class="blockquote">
+        <p>{{ review.text|linebreaks }}</p>
+    </blockquote>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Да, удалить</button>
+        <a href="{% url 'core:product-detail' review.product.pk %}" class="btn btn-secondary">Отмена</a>
+    </form>
+</div>
+{% endblock %} 

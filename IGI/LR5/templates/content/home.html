@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Главная - Зоомагазин{% endblock %}
+
+{% block content %}
+<div class="container">
+    <section class="hero-section text-center py-5 mb-4">
+        <h1>Добро пожаловать в наш зоомагазин!</h1>
+        <p class="lead">Все необходимое для ваших любимых питомцев</p>
+        <a href="{% url 'core:product-list' %}" class="btn btn-primary btn-lg">Перейти в каталог</a>
+    </section>
+
+    <section class="latest-news mb-5">
+        <h2 class="text-center mb-4">Последние новости</h2>
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                {% if latest_news %}
+                    <div class="card news-card h-100">
+                        {% if latest_news.image %}
+                            <img src="{{ latest_news.image.url }}" class="card-img-top" alt="{{ latest_news.title }}" style="max-height: 250px; object-fit: cover;">
+                        {% endif %}
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">{{ latest_news.title }}</h5>
+                            <p class="card-subtitle mb-2 text-muted"><small>{{ latest_news.created_at|date:"d.m.Y" }}</small></p>
+                            <p class="card-text">{{ latest_news.content|truncatewords_html:25 }}</p>
+                            <a href="{% url 'content:news-detail' pk=latest_news.pk %}" class="btn btn-outline-primary mt-auto align-self-start">Читать далее</a>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="text-center">Пока нет новостей.</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<style>
+.hero-section {
+    background-color: #f8f9fa;
+    border-radius: .25rem;
+}
+.news-card {
+    transition: transform .2s ease-in-out, box-shadow .2s ease-in-out;
+}
+.news-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,.1);
+}
+</style>
+
+{% endblock %} 

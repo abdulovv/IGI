@@ -1,0 +1,143 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load core_extras %}
+
+{% block title %}Заказ #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="order-detail-page">
+    <div class="order-header">
+        <h1>Заказ #{{ order.id }}</h1>
+        <div class="order-meta">
+            {% if order.client_timezone %}
+            <div class="order-date-client">
+                {% if order.client_timezone == "Europe/Moscow" %}
+                <span>Дата заказа (Europe/Minsk):</span>
+                {% else %}
+                <span>Дата заказа ({{ order.client_timezone }}):</span>
+                {% endif %}
+                <span>{{ order.get_created_at_in_client_timezone|date:"d/m/Y H:i" }}</span>
+            </div>
+            {% else %}
+            <div class="order-date-client">
+                <span>Дата заказа ({{ user_timezone }}):</span>
+                <span>{{ order.created_at|format_datetime_local:user_timezone|slice:":-3" }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="order-content">
+        <div class="order-details">
+            <section class="order-section">
+                <h2>Информация о заказе</h2>
+                <div class="contact-info">
+                    <div class="info-group">
+                        <label>Email:</label>
+                        <span>{{ order.email }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Телефон:</label>
+                        <span>{{ order.phone }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Адрес доставки:</label>
+                        <span>{{ order.shipping_address }}</span>
+                    </div>
+                    {% if order.client_timezone and order.client_timezone != "Europe/Moscow" %}
+                    <div class="info-group">
+                        <label>Часовой пояс клиента:</label>
+                        <span>{{ order.client_timezone }}</span>
+                    </div>
+                    {% endif %}
+                    {% if order.comment %}
+                    <div class="info-group">
+                        <label>Комментарий:</label>
+                        <span>{{ order.comment }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="order-section">
+                <h2>Товары</h2>
+                <div class="order-items">
+                    {% for item in order_items %}
+                    <div class="order-item">
+                        <div class="item-image">
+                            {% if item.product.image %}
+                                <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+                            {% else %}
+                                <div class="no-image">Нет изображения</div>
+                            {% endif %}
+                        </div>
+                        <div class="item-details">
+                            <h3>
+                                <a href="{% url 'core:product-detail' item.product.id %}">
+                                    {{ item.product.name }}
+                                </a>
+                            </h3>
+                            <p class="item-article">Арт. {{ item.product.article }}</p>
+                            <div class="item-meta">
+                                <span class="item-quantity">{{ item.quantity }} шт.</span>
+                                <span class="item-price">{{ item.price }} руб.</span>
+                                <span class="item-total">{{ item.total_price }} руб.</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+
+        <div class="order-summary">
+            <h2>Сумма заказа</h2>
+            <div class="order-totals">
+                <div class="subtotal">
+                    <span>Товары:</span>
+                    <span>{{ order.subtotal }} руб.</span>
+                </div>
+                
+                {% if order.discount %}
+                <div class="discount">
+                    <span>Скидка:</span>
+                    <span>-{{ order.discount }} руб.</span>
+                </div>
+                {% endif %}
+                
+                {% if order.shipping_cost %}
+                <div class="shipping">
+                    <span>Доставка:</span>
+                    <span>{{ order.shipping_cost }} руб.</span>
+                </div>
+                {% endif %}
+                
+                <div class="total">
+                    <span>Итого:</span>
+                    <span>{{ order.total|floatformat:2 }} руб. (BYN)</span>
+                </div>
+
+                {% if converted_totals %}
+                    <hr style="margin: 10px 0;">
+                    <p style="font-size: 0.9em; margin-bottom: 5px; color: #555;">Примерно в других валютах (курс на момент просмотра):</p>
+                    {% for currency, amount in converted_totals.items %}
+                        {% if amount is not None %}
+                            <div class="total-converted" style="font-size: 0.9em; color: #555;">
+                                <span style="margin-left: 10px;"></span>
+                                <span>{{ amount|floatformat:2 }} {{ currency }}</span>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            {% if order.promo %}
+            <div class="promo-info">
+                <span>Использован промокод:</span>
+                <span class="promo-code">{{ order.promo.code }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

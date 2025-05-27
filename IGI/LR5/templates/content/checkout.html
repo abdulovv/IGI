@@ -1,0 +1,483 @@
+{% extends 'base.html' %}
+
+{% block title %}Оформление заказа - Зоомагазин{% endblock %}
+
+{% block content %}
+<div class="checkout-container">
+    <h1>Оформление заказа</h1>
+
+    <div class="checkout-grid">
+        <div class="checkout-form">
+            <form method="post" id="checkout-form">
+                {% csrf_token %}
+
+                <section class="form-section">
+                    <h2>Контактные данные</h2>
+                    <div class="form-group">
+                        <label for="{{ form.email.id_for_label }}">Email*</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div class="field-errors">
+                                {% for error in form.email.errors %}
+                                    <p class="error">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.phone.id_for_label }}">Телефон*</label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}
+                            <div class="field-errors">
+                                {% for error in form.phone.errors %}
+                                    <p class="error">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <h2>Данные получателя</h2>
+                    <div class="form-group">
+                        <label for="{{ form.first_name.id_for_label }}">Имя*</label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                            <div class="field-errors">
+                                {% for error in form.first_name.errors %}
+                                    <p class="error">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.last_name.id_for_label }}">Фамилия*</label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                            <div class="field-errors">
+                                {% for error in form.last_name.errors %}
+                                    <p class="error">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <h2>Способ доставки</h2>
+                    <div class="delivery-options">
+                        {% for method in delivery_methods %}
+                            <div class="delivery-option">
+                                <input type="radio" name="delivery_method" id="delivery_{{ method.id }}" 
+                                       value="{{ method.id }}" {% if forloop.first %}checked{% endif %}>
+                                <label for="delivery_{{ method.id }}">
+                                    <span class="method-name">{{ method.name }}</span>
+                                    <span class="method-price">{{ method.price }} BYN</span>
+                                    <span class="method-description">{{ method.description }}</span>
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="form-section delivery-address" id="delivery-address">
+                    <h2>Адрес доставки</h2>
+                    <div class="form-group">
+                        <label for="{{ form.city.id_for_label }}">Город*</label>
+                        {{ form.city }}
+                        {% if form.city.errors %}
+                            <div class="field-errors">
+                                {% for error in form.city.errors %}
+                                    <p class="error">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.street.id_for_label }}">Улица*</label>
+                        {{ form.street }}
+                        {% if form.street.errors %}
+                            <div class="field-errors">
+                                {% for error in form.street.errors %}
+                                    <p class="error">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="address-details">
+                        <div class="form-group">
+                            <label for="{{ form.house.id_for_label }}">Дом*</label>
+                            {{ form.house }}
+                            {% if form.house.errors %}
+                                <div class="field-errors">
+                                    {% for error in form.house.errors %}
+                                        <p class="error">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.apartment.id_for_label }}">Квартира</label>
+                            {{ form.apartment }}
+                            {% if form.apartment.errors %}
+                                <div class="field-errors">
+                                    {% for error in form.apartment.errors %}
+                                        <p class="error">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.comment.id_for_label }}">Комментарий к заказу</label>
+                        {{ form.comment }}
+                        {% if form.comment.errors %}
+                            <div class="field-errors">
+                                {% for error in form.comment.errors %}
+                                    <p class="error">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <h2>Способ оплаты</h2>
+                    <div class="payment-options">
+                        {% for method in payment_methods %}
+                            <div class="payment-option">
+                                <input type="radio" name="payment_method" id="payment_{{ method.id }}" 
+                                       value="{{ method.id }}" {% if forloop.first %}checked{% endif %}>
+                                <label for="payment_{{ method.id }}">
+                                    <span class="method-name">{{ method.name }}</span>
+                                    <span class="method-description">{{ method.description }}</span>
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            </form>
+        </div>
+
+        <div class="order-summary">
+            <h2>Ваш заказ</h2>
+            <div class="order-items">
+                {% for item in cart_items %}
+                    <div class="order-item">
+                        <div class="item-info">
+                            <span class="item-quantity">{{ item.quantity }}×</span>
+                            <span class="item-name">{{ item.product.name }}</span>
+                        </div>
+                        <span class="item-price">{{ item.total_price }} BYN</span>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="order-totals">
+                <div class="total-row">
+                    <span>Товары ({{ cart_items|length }})</span>
+                    <span>{{ subtotal }} BYN</span>
+                </div>
+                {% if discount %}
+                    <div class="total-row discount">
+                        <span>Скидка</span>
+                        <span>-{{ discount }} BYN</span>
+                    </div>
+                {% endif %}
+                <div class="total-row">
+                    <span>Доставка</span>
+                    <span id="delivery-cost">{{ delivery_cost }} BYN</span>
+                </div>
+                <div class="total-row final">
+                    <span>Итого к оплате</span>
+                    <span id="total-cost">{{ total }} BYN</span>
+                </div>
+            </div>
+
+            <button type="submit" form="checkout-form" class="button submit-order">
+                Подтвердить заказ
+            </button>
+
+            <div class="order-notes">
+                <p>Нажимая кнопку "Подтвердить заказ", вы соглашаетесь с условиями <a href="#">публичной оферты</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.checkout-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.checkout-container h1 {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.checkout-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+}
+
+.form-section {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-section h2 {
+    margin-bottom: 1.5rem;
+    color: #007bff;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.form-group textarea {
+    height: 100px;
+    resize: vertical;
+}
+
+.address-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.delivery-options,
+.payment-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.delivery-option,
+.payment-option {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 1rem;
+    cursor: pointer;
+}
+
+.delivery-option input[type="radio"],
+.payment-option input[type="radio"] {
+    display: none;
+}
+
+.delivery-option label,
+.payment-option label {
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+}
+
+.method-name {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.method-price {
+    color: #007bff;
+    margin-bottom: 0.25rem;
+}
+
+.method-description {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.delivery-option input[type="radio"]:checked + label,
+.payment-option input[type="radio"]:checked + label {
+    color: #007bff;
+}
+
+.delivery-option:hover,
+.payment-option:hover {
+    border-color: #007bff;
+}
+
+.order-summary {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 1.5rem;
+    position: sticky;
+    top: 2rem;
+}
+
+.order-summary h2 {
+    margin-bottom: 1.5rem;
+}
+
+.order-items {
+    margin-bottom: 1.5rem;
+}
+
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.item-info {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.item-quantity {
+    color: #6c757d;
+}
+
+.order-totals {
+    border-top: 1px solid #dee2e6;
+    padding-top: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.total-row.discount {
+    color: #28a745;
+}
+
+.total-row.final {
+    font-weight: 500;
+    font-size: 1.2rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.submit-order {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+.order-notes {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-align: center;
+}
+
+.order-notes a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.order-notes a:hover {
+    text-decoration: underline;
+}
+
+.field-errors {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+@media (max-width: 768px) {
+    .checkout-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .address-details {
+        grid-template-columns: 1fr;
+    }
+
+    .order-summary {
+        position: static;
+        margin-top: 2rem;
+    }
+}
+</style>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deliveryOptions = document.querySelectorAll('input[name="delivery_method"]');
+    const deliveryAddress = document.getElementById('delivery-address');
+    const deliveryCost = document.getElementById('delivery-cost');
+    const totalCost = document.getElementById('total-cost');
+
+    // Обработка изменения способа доставки
+    deliveryOptions.forEach(option => {
+        option.addEventListener('change', function() {
+            // Показываем/скрываем форму адреса доставки
+            if (this.value === 'pickup') {
+                deliveryAddress.style.display = 'none';
+            } else {
+                deliveryAddress.style.display = 'block';
+            }
+
+            // Обновляем стоимость доставки и итоговую сумму
+            updateDeliveryCost(this.value);
+        });
+    });
+
+    function updateDeliveryCost(methodId) {
+        fetch(`/api/delivery-cost/${methodId}/`, {
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                deliveryCost.textContent = `${data.delivery_cost} BYN`;
+                totalCost.textContent = `${data.total} BYN`;
+            }
+        });
+    }
+
+    // Получение CSRF токена из cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}
+{% endblock %} 

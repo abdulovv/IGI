@@ -1,0 +1,94 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Мои заказы{% endblock %}
+
+{% block content %}
+<div class="order-list-page">
+    <h1>{% if user.is_staff or user.is_superuser %}Все заказы{% else %}Мои заказы{% endif %}</h1>
+
+    {% if orders %}
+        <div class="orders-grid">
+            {% for order in orders %}
+            <div class="order-card">
+                <div class="order-header">
+                    <h2>
+                        <a href="{% url 'core:order-detail' order.id %}">
+                            Заказ #{{ order.id }}
+                        </a>
+                    </h2>
+                    <span class="status-{{ order.status }}">{{ order.get_status_display }}</span>
+                </div>
+
+                <div class="order-info">
+                    <div class="info-group">
+                        <label>Дата:</label>
+                        <span>{{ order.created_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    {% if user.is_staff or user.is_superuser %}
+                    <div class="info-group">
+                        <label>Покупатель:</label>
+                        <span>{{ order.customer.get_full_name|default:order.customer.username }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="info-group">
+                        <label>Сумма:</label>
+                        <span>{{ order.total }} руб.</span>
+                    </div>
+                    {% if order.promo %}
+                    <div class="info-group">
+                        <label>Промокод:</label>
+                        <span class="promo-code">{{ order.promo.code }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="order-items-preview">
+                    <h3>Товары:</h3>
+                    <ul>
+                        {% for item in order.items.all|slice:":3" %}
+                        <li>
+                            {{ item.product.name }} × {{ item.quantity }}
+                            {% if not forloop.last %}<br>{% endif %}
+                        </li>
+                        {% endfor %}
+                        {% if order.items.count > 3 %}
+                        <li class="more-items">
+                            И ещё {{ order.items.count|add:"-3" }} товар(ов)
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <a href="{% url 'core:order-detail' order.id %}" class="button view-details">
+                    Подробнее
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if is_paginated %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page=1">&laquo; Первая</a>
+                <a href="?page={{ page_obj.previous_page_number }}">Предыдущая</a>
+            {% endif %}
+
+            <span class="current">
+                Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">Следующая</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}">Последняя &raquo;</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="no-orders">
+            <p>У вас пока нет заказов</p>
+            <a href="{% url 'core:product-list' %}" class="button">Перейти к покупкам</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 
