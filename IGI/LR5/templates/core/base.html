@@ -26,18 +26,12 @@
                         <li class="admin-menu">
                             <a href="{% url 'admin:index' %}">Админ-панель</a>
                         </li>
-                        <li class="admin-menu">
-                            <a href="{% url 'core:sales-list' %}">Все продажи</a>
-                        </li>
                         {% if request.resolver_match.url_name != 'order-detail' and request.resolver_match.url_name != 'statistics' %}
                         <li class="admin-menu">
                             <a href="{% url 'core:statistics' %}">Статистика</a>
                         </li>
                         {% endif %}
                     {% elif user.is_staff %}
-                        <li>
-                            <a href="{% url 'core:sales-list' %}">Продажи</a>
-                        </li>
                         {% if request.resolver_match.url_name != 'order-detail' and request.resolver_match.url_name != 'statistics' %}
                         <li>
                             <a href="{% url 'core:statistics' %}">Статистика</a>

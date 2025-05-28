@@ -21,6 +21,7 @@
                 </div>
             </div>
 
+            {% if not user.is_staff and not user.is_superuser %}
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Мои заказы</h5>
@@ -52,6 +53,7 @@
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
         </div>
         <div class="col-md-8">
             <div class="card">

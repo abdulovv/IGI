@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}Закупка товара {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Информация о товаре -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Информация о товаре</h5>
+                </div>
+                <div class="card-body">
+                    <h4>{{ product.name }}</h4>
+                    <p><strong>Артикул:</strong> {{ product.article }}</p>
+                    <p><strong>Категория:</strong> {{ product.category.name }}</p>
+                    <p><strong>Текущая цена продажи:</strong> {{ product.price }} руб.</p>
+                    <p><strong>Количество на складе:</strong> {{ product.quantity }} шт.</p>
+                </div>
+            </div>
+
+            <!-- Форма закупки -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Новая закупка</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit" class="btn btn-primary">Оформить закупку</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- История закупок -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">История закупок</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Поставщик</th>
+                                    <th>Количество</th>
+                                    <th>Цена за ед.</th>
+                                    <th>Сумма</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for purchase in purchase_history %}
+                                <tr>
+                                    <td>{{ purchase.purchase_date|date:"d.m.Y H:i" }}</td>
+                                    <td>{{ purchase.supplier.name }}</td>
+                                    <td>{{ purchase.quantity }}</td>
+                                    <td>{{ purchase.price_per_unit }}</td>
+                                    <td>{{ purchase.total_price }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">История закупок пуста</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if user.is_superuser %}
+    <!-- Информация о поставщиках (только для суперпользователя) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Информация о поставщиках</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Название</th>
+                                    <th>Адрес</th>
+                                    <th>Телефон</th>
+                                    <th>Поставляемые товары</th>
+                                    <th>Последняя поставка</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for supplier in suppliers %}
+                                <tr>
+                                    <td>{{ supplier.name }}</td>
+                                    <td>{{ supplier.address }}</td>
+                                    <td>{{ supplier.phone }}</td>
+                                    <td>
+                                        <ul class="list-unstyled mb-0">
+                                            {% for sp in supplier.supplierproduct_set.all|slice:":3" %}
+                                            <li>{{ sp.product.name }} ({{ sp.product.article }})</li>
+                                            {% endfor %}
+                                            {% if supplier.supplierproduct_set.count > 3 %}
+                                            <li>...</li>
+                                            {% endif %}
+                                        </ul>
+                                    </td>
+                                    <td>
+                                        {% with last_purchase=supplier.purchases.first %}
+                                        {% if last_purchase %}
+                                        {{ last_purchase.purchase_date|date:"d.m.Y" }}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif user.is_staff %}
+    <!-- Информация о продажах и поставщиках (для сотрудника) -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Статистика продаж</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Всего продаж:</strong> {{ total_sales_count }}</p>
+                    <p><strong>Общая сумма продаж:</strong> {{ total_revenue }} руб.</p>
+                    <p><strong>Средний чек:</strong> {{ average_sale }} руб.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Мои поставщики</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for supplier in staff_suppliers %}
+                        <div class="list-group-item">
+                            <h6 class="mb-1">{{ supplier.name }}</h6>
+                            <p class="mb-1"><small>Телефон: {{ supplier.phone }}</small></p>
+                            <p class="mb-0"><small>Последняя закупка: 
+                                {% with last_purchase=supplier.purchases.first %}
+                                {% if last_purchase %}
+                                {{ last_purchase.purchase_date|date:"d.m.Y" }}
+                                {% else %}
+                                еще не было закупок
+                                {% endif %}
+                                {% endwith %}
+                            </small></p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

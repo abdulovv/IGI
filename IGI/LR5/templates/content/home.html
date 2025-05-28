@@ -11,10 +11,11 @@
         <a href="{% url 'core:product-list' %}" class="btn btn-primary btn-lg">Перейти в каталог</a>
     </section>
 
-    <section class="latest-news mb-5">
-        <h2 class="text-center mb-4">Последние новости</h2>
-        <div class="row justify-content-center">
-            <div class="col-md-8 col-lg-6">
+    <div class="row">
+        <!-- Новости -->
+        <div class="col-md-8">
+            <section class="latest-news mb-5">
+                <h2 class="text-center mb-4">Последние новости</h2>
                 {% if latest_news %}
                     <div class="card news-card h-100">
                         {% if latest_news.image %}
@@ -30,10 +31,54 @@
                 {% else %}
                     <p class="text-center">Пока нет новостей.</p>
                 {% endif %}
+            </section>
+        </div>
+
+        <!-- Календарь и время -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Календарь</h5>
+                        <small>{{ local_time|date:"H:i" }}</small>
+                    </div>
+                </div>
+                <div class="card-body p-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <small class="text-muted">{{ user_timezone }}</small>
+                        <small class="text-muted">{{ local_time|date:"d/m/Y" }}</small>
+                    </div>
+                    <table class="table table-bordered table-sm text-center mb-2" style="font-size: 0.9rem;">
+                        <thead>
+                            <tr>
+                                <th>Пн</th>
+                                <th>Вт</th>
+                                <th>Ср</th>
+                                <th>Чт</th>
+                                <th>Пт</th>
+                                <th>Сб</th>
+                                <th>Вс</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for week in calendar_weeks %}
+                            <tr>
+                                {% for day in week %}
+                                <td {% if day.today %}class="table-primary fw-bold"{% endif %}>
+                                    {{ day.day }}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="text-end">
+                        <small class="text-muted">UTC: {{ utc_time|date:"H:i" }}</small>
+                    </div>
+                </div>
             </div>
         </div>
-    </section>
-
+    </div>
 </div>
 
 <style>

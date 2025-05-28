@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
 from django.template.loader import render_to_string
-from .models import Product, Category, Supplier, Sale, Cart, CartItem, Order, OrderItem, Promo, PromoUsage, ProductReview
+from .models import Product, Category, Supplier, Sale, Cart, CartItem, Order, OrderItem, Promo, PromoUsage, ProductReview, SupplierPurchase
 from django.utils import timezone
 import pytz # Добавляем импорт pytz
 from decimal import Decimal
@@ -16,7 +16,7 @@ from django.contrib.auth import get_user_model
 import calendar # Добавляем импорт calendar
 from datetime import datetime # Добавляем импорт datetime
 from django.conf import settings
-from .forms import ProductQuantityUpdateForm, ProductReviewUpdateForm # Import ProductReviewUpdateForm
+from .forms import ProductQuantityUpdateForm, ProductReviewUpdateForm, SupplierPurchaseForm # Import ProductReviewUpdateForm and SupplierPurchaseForm
 
 class ProductListView(ListView):
     model = Product
@@ -69,6 +69,23 @@ class ProductListView(ListView):
         if user.is_authenticated:
             context['is_staff'] = user.is_staff
             context['is_superuser'] = user.is_superuser
+            
+            # Информация для сотрудников и администраторов
+            if user.is_staff or user.is_superuser:
+                # Получаем статистику продаж
+                sales_stats = Order.objects.aggregate(
+                    total_sales_count=Count('id'),
+                    total_revenue=Sum('total')
+                )
+                context['total_sales_count'] = sales_stats['total_sales_count'] or 0
+                context['total_revenue'] = sales_stats['total_revenue'] or 0
+
+                # Получаем информацию о поставщиках
+                suppliers = Supplier.objects.annotate(
+                    products_count=Count('products')
+                ).prefetch_related('products')
+                
+                context['suppliers'] = suppliers
             
         return context
 
@@ -609,7 +626,7 @@ class StatisticsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Статистика магазина NEW' # Обновим для заметности
+        context['page_title'] = 'Статистика'  # Изменяем заголовок
 
         # --- Таймзоны и Даты ---
         user_timezone_str = self.request.session.get('user_timezone', 'Europe/Minsk')
@@ -816,3 +833,80 @@ class StatisticsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             return "Нет явной моды" if len(set(counts.values())) == 1 and len(counts) > 1 else ", ".join(map(str, sorted(list(set(modes)))))
 
         return ", ".join(map(str, sorted(list(set(modes))))) # Возвращаем уникальные моды, отсортированные
+
+@login_required
+@user_passes_test(lambda u: u.is_staff or u.is_superuser)
+def update_product_quantity(request, product_id):
+    if not request.method == 'POST':
+        return redirect('core:product-list')
+    
+    product = get_object_or_404(Product, id=product_id)
+    try:
+        new_quantity = int(request.POST.get('quantity', 0))
+        if new_quantity < 0:
+            raise ValueError("Количество не может быть отрицательным")
+        
+        product.quantity = new_quantity
+        product.save(update_fields=['quantity'])
+        messages.success(request, f"Количество товара '{product.name}' успешно обновлено до {new_quantity}.")
+    except (ValueError, TypeError) as e:
+        messages.error(request, "Ошибка при обновлении количества. Пожалуйста, введите корректное значение.")
+    
+    return redirect('core:product-list')
+
+class ProductPurchaseView(LoginRequiredMixin, UserPassesTestMixin, View):
+    template_name = 'core/product_purchase.html'
+    
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
+    
+    def get_context_data(self, product):
+        context = {
+            'product': product,
+            'form': SupplierPurchaseForm(product=product),
+            'purchase_history': product.purchase_history.select_related('supplier').order_by('-purchase_date')[:10]
+        }
+        
+        if self.request.user.is_superuser:
+            # Для суперпользователя - полная информация о всех поставщиках
+            context['suppliers'] = product.suppliers.prefetch_related(
+                'supplierproduct_set__product',
+                'purchases'
+            ).all()
+        elif self.request.user.is_staff:
+            # Для сотрудника - статистика продаж и поставщики, с которыми он работал
+            from django.db.models import Avg
+            staff_supplier_ids = product.suppliers.values_list('id', flat=True)
+            
+            context['staff_suppliers'] = Supplier.objects.filter(id__in=staff_supplier_ids)
+            
+            sales_stats = Order.objects.aggregate(
+                total_sales_count=Count('id'),
+                total_revenue=Sum('total'),
+                average_sale=Avg('total')
+            )
+            context['total_sales_count'] = sales_stats['total_sales_count'] or 0
+            context['total_revenue'] = sales_stats['total_revenue'] or 0
+            context['average_sale'] = sales_stats['average_sale'] or 0
+            
+        return context
+    
+    def get(self, request, product_id):
+        product = get_object_or_404(Product, id=product_id)
+        context = self.get_context_data(product)
+        return render(request, self.template_name, context)
+    
+    def post(self, request, product_id):
+        product = get_object_or_404(Product, id=product_id)
+        form = SupplierPurchaseForm(product=product, data=request.POST)
+        
+        if form.is_valid():
+            purchase = form.save(commit=False)
+            purchase.product = product
+            purchase.save()
+            messages.success(request, f'Закупка товара "{product.name}" успешно оформлена')
+            return redirect('core:product-list')
+        
+        context = self.get_context_data(product)
+        context['form'] = form
+        return render(request, self.template_name, context)

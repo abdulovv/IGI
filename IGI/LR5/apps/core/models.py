@@ -13,6 +13,7 @@ def get_default_valid_until():
 class Category(models.Model):
     name = models.CharField('Название категории', max_length=100)
     description = models.TextField('Описание', blank=True)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subcategories', verbose_name='Родительская категория')
 
     class Meta:
         verbose_name = 'Категория'
@@ -26,6 +27,8 @@ class Supplier(models.Model):
     address = models.CharField('Адрес', max_length=255)
     phone = models.CharField('Телефон', max_length=20)
     email = models.EmailField('Email')
+    # ManyToManyField - связь с товарами через промежуточную модель
+    products = models.ManyToManyField('Product', through='SupplierProduct', related_name='supplier_products', verbose_name='Поставляемые товары')
 
     class Meta:
         verbose_name = 'Поставщик'
@@ -34,17 +37,34 @@ class Supplier(models.Model):
     def __str__(self):
         return self.name
 
+# Промежуточная модель для связи многие-ко-многим между Supplier и Product
+class SupplierProduct(models.Model):
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, verbose_name='Поставщик')
+    product = models.ForeignKey('Product', on_delete=models.CASCADE, verbose_name='Товар')
+    is_main_supplier = models.BooleanField('Основной поставщик', default=False)
+    supply_price = models.DecimalField('Цена поставки', max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    last_supply_date = models.DateTimeField('Дата последней поставки', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Поставщик товара'
+        verbose_name_plural = 'Поставщики товара'
+        unique_together = ['supplier', 'product']  # Уникальная связь
+
+    def __str__(self):
+        return f"{self.supplier.name} - {self.product.name}"
+
 class Product(models.Model):
+    # ForeignKey - связь с категорией (один ко многим)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products', verbose_name='Категория')
     name = models.CharField('Название товара', max_length=200)
     article = models.CharField('Артикул', max_length=50, unique=True)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products', verbose_name='Категория')
     description = models.TextField('Описание')
-    price = models.DecimalField('Цена', max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    price = models.DecimalField('Цена продажи', max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     quantity = models.PositiveIntegerField('Количество на складе', default=0)
-    suppliers = models.ManyToManyField(Supplier, related_name='products', verbose_name='Поставщики')
     image = models.ImageField('Изображение', upload_to='products/', blank=True, null=True)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     updated_at = models.DateTimeField('Дата обновления', auto_now=True)
+    suppliers = models.ManyToManyField(Supplier, related_name='product_suppliers', verbose_name='Поставщики')
 
     class Meta:
         verbose_name = 'Товар'
@@ -53,6 +73,18 @@ class Product(models.Model):
 
     def __str__(self):
         return f"{self.name} (Арт. {self.article})"
+
+    @property
+    def current_supplier(self):
+        """Получить основного поставщика товара"""
+        supplier_product = self.supplierproduct_set.filter(is_main_supplier=True).first()
+        return supplier_product.supplier if supplier_product else None
+
+    @property
+    def current_supply_price(self):
+        """Получить текущую цену поставки"""
+        supplier_product = self.supplierproduct_set.filter(is_main_supplier=True).first()
+        return supplier_product.supply_price if supplier_product else None
 
     def calculate_rating(self):
         reviews = self.reviews.filter(is_moderated=True)
@@ -295,3 +327,43 @@ class PromoUsage(models.Model):
 
     def __str__(self):
         return f"{self.customer.username} использовал {self.promo.code}"
+
+class SupplierPurchase(models.Model):
+    # ForeignKey - связи с поставщиком и товаром (один ко многим)
+    supplier = models.ForeignKey(Supplier, on_delete=models.PROTECT, related_name='purchases', verbose_name='Поставщик')
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='purchase_history', verbose_name='Товар')
+    quantity = models.PositiveIntegerField('Количество', validators=[MinValueValidator(1)])
+    price_per_unit = models.DecimalField('Цена за единицу', max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    total_price = models.DecimalField('Общая стоимость', max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    purchase_date = models.DateTimeField('Дата закупки', default=timezone.now)
+    created_at = models.DateTimeField('Дата создания записи', auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-purchase_date']
+        verbose_name = 'Закупка у поставщика'
+        verbose_name_plural = 'Закупки у поставщиков'
+    
+    def save(self, *args, **kwargs):
+        # Рассчитываем общую стоимость
+        self.total_price = self.quantity * self.price_per_unit
+        
+        # Обновляем связь поставщик-товар
+        supplier_product, created = SupplierProduct.objects.get_or_create(
+            supplier=self.supplier,
+            product=self.product,
+            defaults={'supply_price': self.price_per_unit}
+        )
+        
+        # Обновляем информацию о поставке
+        supplier_product.supply_price = self.price_per_unit
+        supplier_product.last_supply_date = self.purchase_date
+        supplier_product.save()
+        
+        # Увеличиваем количество товара
+        self.product.quantity += self.quantity
+        self.product.save()
+        
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"Закупка {self.product.name} ({self.quantity} шт.) у {self.supplier.name} от {self.purchase_date.strftime('%d.%m.%Y')}"

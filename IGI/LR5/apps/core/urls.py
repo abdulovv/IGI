@@ -6,6 +6,7 @@ app_name = 'core'
 urlpatterns = [
     path('', views.ProductListView.as_view(), name='product-list'),
     path('product/<int:pk>/', views.ProductDetailView.as_view(), name='product-detail'),
+    path('product/<int:product_id>/purchase/', views.ProductPurchaseView.as_view(), name='product-purchase'),
     path('suppliers/', views.SupplierListView.as_view(), name='supplier-list'),
     path('sales/', views.SaleListView.as_view(), name='sales-list'),
     path('cart/', views.CartView.as_view(), name='cart'),
@@ -16,6 +17,7 @@ urlpatterns = [
     path('order/<int:pk>/', views.OrderDetailView.as_view(), name='order-detail'),
     path('orders/', views.OrderListView.as_view(), name='order-list'),
     path('order/<int:pk>/update-status/', views.update_order_status, name='update-order-status'),
+    path('product/<int:product_id>/update-quantity/', views.update_product_quantity, name='update-product-quantity'),
     # Review URLs
     path('review/<int:pk>/edit/', views.ReviewUpdateView.as_view(), name='review-edit'),
     path('review/<int:pk>/delete/', views.ReviewDeleteView.as_view(), name='review-delete'),

@@ -1,16 +1,56 @@
 from django.views.generic import ListView, DetailView, TemplateView
-from django.views.generic.edit import CreateView
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy
+from django.contrib import messages
 from .models import News, CompanyInfo, FAQ, Review, Vacancy, Promotion, Employee
 from .forms import ReviewForm
+import calendar
+from datetime import datetime, date
+import pytz
 
 class HomeView(TemplateView):
     template_name = 'content/home.html'
 
+    def get_calendar_weeks(self):
+        today = date.today()
+        cal = calendar.monthcalendar(today.year, today.month)
+        weeks = []
+        for week in cal:
+            week_days = []
+            for day in week:
+                if day == 0:
+                    week_days.append({'day': '', 'today': False})
+                else:
+                    week_days.append({
+                        'day': day,
+                        'today': day == today.day
+                    })
+            weeks.append(week_days)
+        return weeks
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['latest_news'] = News.objects.filter(is_published=True).order_by('-created_at').first()
+        
+        # Получаем временную зону пользователя из сессии или используем по умолчанию
+        user_timezone_str = self.request.session.get('user_timezone', 'Europe/Minsk')
+        try:
+            user_timezone = pytz.timezone(user_timezone_str)
+        except pytz.exceptions.UnknownTimeZoneError:
+            user_timezone = pytz.timezone('Europe/Minsk')
+
+        # Текущее время в UTC и локальное время
+        now_utc = datetime.now(pytz.UTC)
+        now_local = now_utc.astimezone(user_timezone)
+
+        context.update({
+            'latest_news': News.objects.filter(is_published=True).order_by('-created_at').first(),
+            'user_timezone': user_timezone_str,
+            'utc_time': now_utc,
+            'local_time': now_local,
+            'current_date': now_local,
+            'calendar_weeks': self.get_calendar_weeks(),
+        })
         return context
 
 class AboutView(TemplateView):
@@ -71,6 +111,33 @@ class ReviewCreateView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.user = self.request.user
         return super().form_valid(form)
+
+class ReviewUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = Review
+    form_class = ReviewForm
+    template_name = 'content/review_form.html'
+    success_url = reverse_lazy('content:review-list')
+
+    def test_func(self):
+        review = self.get_object()
+        return self.request.user == review.user
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Ваш отзыв успешно обновлен.')
+        return super().form_valid(form)
+
+class ReviewDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = Review
+    template_name = 'content/review_confirm_delete.html'
+    success_url = reverse_lazy('content:review-list')
+
+    def test_func(self):
+        review = self.get_object()
+        return self.request.user == review.user
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(self.request, 'Ваш отзыв успешно удален.')
+        return super().delete(request, *args, **kwargs)
 
 class PromotionListView(ListView):
     model = Promotion
