@@ -17,4 +17,5 @@ urlpatterns = [
     path('vacancies/', views.VacancyListView.as_view(), name='vacancies'),
     path('privacy/', views.PrivacyView.as_view(), name='privacy'),
     path('promotions/', views.PromotionListView.as_view(), name='promotion_list'),
+    path('api-dashboard/', views.APIDashboardView.as_view(), name='api-dashboard'),
 ]

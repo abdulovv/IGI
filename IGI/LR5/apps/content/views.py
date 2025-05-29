@@ -12,6 +12,18 @@ import pytz
 class HomeView(TemplateView):
     template_name = 'content/home.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['latest_news'] = News.objects.filter(is_published=True).order_by('-created_at').first()
+        return context
+
+class APIDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'content/api_dashboard.html'
+    login_url = 'accounts:login'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
     def get_calendar_weeks(self):
         today = date.today()
         cal = calendar.monthcalendar(today.year, today.month)
@@ -44,7 +56,6 @@ class HomeView(TemplateView):
         now_local = now_utc.astimezone(user_timezone)
 
         context.update({
-            'latest_news': News.objects.filter(is_published=True).order_by('-created_at').first(),
             'user_timezone': user_timezone_str,
             'utc_time': now_utc,
             'local_time': now_local,
