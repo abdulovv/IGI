@@ -58,8 +58,44 @@ class APIDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def test_func(self):
         return self.request.user.is_superuser
 
+    def get_calendar_weeks(self):
+        today = date.today()
+        cal = calendar.monthcalendar(today.year, today.month)
+        weeks = []
+        for week in cal:
+            week_days = []
+            for day in week:
+                if day == 0:
+                    week_days.append({'day': '', 'today': False})
+                else:
+                    week_days.append({
+                        'day': day,
+                        'today': day == today.day
+                    })
+            weeks.append(week_days)
+        return weeks
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
+        # Получаем временную зону пользователя из сессии или используем по умолчанию
+        user_timezone_str = self.request.session.get('user_timezone', 'Europe/Minsk')
+        try:
+            user_timezone = pytz.timezone(user_timezone_str)
+        except pytz.exceptions.UnknownTimeZoneError:
+            user_timezone = pytz.timezone('Europe/Minsk')
+
+        # Текущее время в UTC и локальное время
+        now_utc = datetime.now(pytz.UTC)
+        now_local = now_utc.astimezone(user_timezone)
+
+        context.update({
+            'user_timezone': user_timezone_str,
+            'utc_time': now_utc,
+            'local_time': now_local,
+            'current_date': now_local,
+            'calendar_weeks': self.get_calendar_weeks(),
+        })
         return context
 
 class AboutView(TemplateView):
