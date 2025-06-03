@@ -1,0 +1,103 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Отзывы клиентов{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Отзывы наших клиентов</h1>
+        <a href="{% url 'core:statistics' %}" class="btn btn-primary">Вернуться к статистике</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            {% for review in reviews %}
+            <div class="card review-card mb-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="{{ review.avatar }}" alt="{{ review.author }}" class="review-avatar">
+                        <div class="ms-3">
+                            <h5 class="mb-0">{{ review.author }}</h5>
+                            <small class="text-muted">{{ review.date }}</small>
+                        </div>
+                        <div class="ms-auto">
+                            <div class="rating">
+                                {% for i in "12345"|make_list %}
+                                    {% if forloop.counter <= review.rating %}
+                                        <i class="fas fa-star text-warning"></i>
+                                    {% else %}
+                                        <i class="far fa-star text-warning"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="review-text mb-2">{{ review.text }}</p>
+                    
+                    <div class="purchased-item">
+                        <small class="text-muted">
+                            <i class="fas fa-shopping-cart me-1"></i>
+                            Купил(а): {{ review.purchased }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+.review-card {
+    border: none;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.review-card:hover {
+    transform: translateY(-5px);
+}
+
+.review-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.rating {
+    font-size: 0.9rem;
+}
+
+.review-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #444;
+}
+
+.purchased-item {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.purchased-item i {
+    color: #6c757d;
+}
+
+@media (max-width: 768px) {
+    .review-card {
+        margin: 0 10px 20px;
+    }
+    
+    .review-avatar {
+        width: 50px;
+        height: 50px;
+    }
+}
+</style>
+{% endblock %} 

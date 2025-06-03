@@ -8,6 +8,9 @@ from .forms import ReviewForm
 import calendar
 from datetime import datetime, date
 import pytz
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 
 class HomeView(TemplateView):
     template_name = 'content/home.html'
@@ -139,50 +142,56 @@ class VacancyListView(ListView):
     context_object_name = 'vacancies'
     queryset = Vacancy.objects.filter(is_active=True)
 
-class ReviewListView(ListView):
-    model = Review
-    template_name = 'content/review_list.html'
-    context_object_name = 'reviews'
-    queryset = Review.objects.filter(is_published=True).order_by('-created_at')
-    paginate_by = 5
+def review_list(request):
+    reviews = Review.objects.filter(is_published=True).order_by('-created_at')
+    paginator = Paginator(reviews, 5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'content/review_list.html', {'reviews': page_obj})
 
-class ReviewCreateView(LoginRequiredMixin, CreateView):
-    model = Review
-    form_class = ReviewForm
-    template_name = 'content/review_form.html'
-    success_url = reverse_lazy('content:review-list')
-    login_url = reverse_lazy('accounts:login')
+@login_required
+def create_review(request):
+    if request.method == 'POST':
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.user = request.user
+            review.save()
+            messages.success(request, 'Ваш отзыв успешно создан.')
+            return redirect('content:review-list')
+    else:
+        form = ReviewForm()
+    return render(request, 'content/review_form.html', {'form': form})
 
-    def form_valid(self, form):
-        form.instance.user = self.request.user
-        return super().form_valid(form)
+@login_required
+def update_review(request, pk):
+    review = get_object_or_404(Review, pk=pk)
+    if request.user != review.user:
+        messages.error(request, 'Вы не можете редактировать чужой отзыв.')
+        return redirect('content:review-list')
+    
+    if request.method == 'POST':
+        form = ReviewForm(request.POST, instance=review)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Ваш отзыв успешно обновлен.')
+            return redirect('content:review-list')
+    else:
+        form = ReviewForm(instance=review)
+    return render(request, 'content/review_form.html', {'form': form, 'review': review})
 
-class ReviewUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    model = Review
-    form_class = ReviewForm
-    template_name = 'content/review_form.html'
-    success_url = reverse_lazy('content:review-list')
-
-    def test_func(self):
-        review = self.get_object()
-        return self.request.user == review.user
-
-    def form_valid(self, form):
-        messages.success(self.request, 'Ваш отзыв успешно обновлен.')
-        return super().form_valid(form)
-
-class ReviewDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-    model = Review
-    template_name = 'content/review_confirm_delete.html'
-    success_url = reverse_lazy('content:review-list')
-
-    def test_func(self):
-        review = self.get_object()
-        return self.request.user == review.user
-
-    def delete(self, request, *args, **kwargs):
-        messages.success(self.request, 'Ваш отзыв успешно удален.')
-        return super().delete(request, *args, **kwargs)
+@login_required
+def delete_review(request, pk):
+    review = get_object_or_404(Review, pk=pk)
+    if request.user != review.user:
+        messages.error(request, 'Вы не можете удалить чужой отзыв.')
+        return redirect('content:review-list')
+    
+    if request.method == 'POST':
+        review.delete()
+        messages.success(request, 'Ваш отзыв успешно удален.')
+        return redirect('content:review-list')
+    return render(request, 'content/review_confirm_delete.html', {'review': review})
 
 class PromotionListView(ListView):
     model = Promotion
