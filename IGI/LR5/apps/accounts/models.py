@@ -42,7 +42,7 @@ def save_user_profile(sender, instance, **kwargs):
 
 class Employee(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employee', verbose_name='Пользователь')
-    vacancy = models.ForeignKey(Vacancy, on_delete=models.SET_NULL, null=True, blank=True, related_name='employees', verbose_name='Вакансия')
+    vacancy = models.ForeignKey(Vacancy, on_delete=models.SET_NULL, null=True, blank=True, related_name='account_employees', verbose_name='Вакансия')
     hire_date = models.DateField('Дата приема на работу', auto_now_add=True)
     salary = models.DecimalField('Зарплата', max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     is_active = models.BooleanField('Активен', default=True)

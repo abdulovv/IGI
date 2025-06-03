@@ -33,6 +33,7 @@ class VacancyAdmin(admin.ModelAdmin):
     list_filter = ('is_active', 'created_at')
     search_fields = ('title', 'description')
     readonly_fields = ('created_at',)
+    search_fields = ['title']
 
 @admin.register(Promotion)
 class PromotionAdmin(admin.ModelAdmin):
@@ -62,14 +63,14 @@ class PromotionAdmin(admin.ModelAdmin):
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
-    list_display = ('get_full_name', 'position', 'get_email', 'phone', 'is_active')
-    search_fields = ('user__username', 'user__first_name', 'user__last_name', 'user__email', 'position')
-    list_filter = ('position', 'is_active')
-    list_select_related = ('user',)
+    list_display = ('full_name', 'position', 'phone', 'is_active')
+    search_fields = ('first_name', 'last_name', 'phone', 'vacancy__title')
+    list_filter = ('vacancy', 'is_active')
+    autocomplete_fields = ['vacancy']
 
     fieldsets = (
         (None, {
-            'fields': ('user', 'position', 'photo', 'phone', 'description', 'is_active')
+            'fields': ('first_name', 'last_name', 'vacancy', 'phone', 'photo', 'description', 'is_active')
         }),
     )
 

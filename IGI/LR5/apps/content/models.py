@@ -129,10 +129,11 @@ class Promotion(models.Model):
         return "Период не указан"
 
 class Employee(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name='Пользователь системы', related_name='content_profile')
-    position = models.CharField('Должность', max_length=100)
+    first_name = models.CharField('Имя', max_length=50, null=True, blank=True)
+    last_name = models.CharField('Фамилия', max_length=50, null=True, blank=True)
+    vacancy = models.ForeignKey(Vacancy, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Должность', related_name='content_employees')
+    phone = models.CharField('Телефон', max_length=20, null=True, blank=True)
     photo = models.ImageField('Фото', upload_to='employees/', blank=True, null=True)
-    phone = models.CharField('Рабочий телефон', max_length=20, blank=True)
     description = models.TextField('Описание/Обязанности', blank=True)
     is_active = models.BooleanField('Активен (работает)', default=True)
     created_at = models.DateTimeField('Дата добавления записи', auto_now_add=True)
@@ -141,15 +142,19 @@ class Employee(models.Model):
     class Meta:
         verbose_name = 'Сотрудник'
         verbose_name_plural = 'Сотрудники'
-        ordering = ['user__last_name', 'user__first_name']
+        ordering = ['last_name', 'first_name']
 
     def __str__(self):
-        return f"{self.user.get_full_name() or self.user.username} - {self.position}"
+        full_name = f"{self.last_name} {self.first_name}" if self.last_name and self.first_name else "Без имени"
+        position = self.vacancy.title if self.vacancy else "Без должности"
+        return f"{full_name} - {position}"
 
     @property
     def full_name(self):
-        return self.user.get_full_name() or self.user.username
-    
+        if self.last_name and self.first_name:
+            return f"{self.last_name} {self.first_name}"
+        return "Без имени"
+
     @property
-    def email(self):
-        return self.user.email
+    def position(self):
+        return self.vacancy.title if self.vacancy else "Без должности"

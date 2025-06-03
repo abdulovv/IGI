@@ -80,9 +80,6 @@
                             <p class="card-text">{{ employee.description|truncatewords:20 }}</p>
                         {% endif %}
                         <ul class="list-unstyled mt-3">
-                            {% if employee.email %}
-                                <li><i class="bi bi-envelope-fill"></i> <a href="mailto:{{ employee.email }}">{{ employee.email }}</a></li>
-                            {% endif %}
                             {% if employee.phone %}
                                 <li><i class="bi bi-telephone-fill"></i> {{ employee.phone }}</li>
                             {% endif %}

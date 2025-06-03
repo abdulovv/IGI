@@ -20,9 +20,9 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(Sale)
 class SaleAdmin(admin.ModelAdmin):
-    list_display = ('product', 'quantity', 'price_per_unit', 'total_price', 'customer', 'date')
-    list_filter = ('date', 'customer')
-    search_fields = ('product__name', 'customer__username')
+    list_display = ('product', 'quantity', 'price_per_unit', 'total_price', 'full_name', 'date')
+    list_filter = ('date',)
+    search_fields = ('product__name', 'first_name', 'last_name', 'phone')
     readonly_fields = ('total_price', 'date')
 
 @admin.register(Cart)

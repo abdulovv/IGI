@@ -25,6 +25,8 @@ class Category(models.Model):
 class Supplier(models.Model):
     name = models.CharField('Название компании', max_length=100)
     address = models.CharField('Адрес', max_length=255)
+    contact_first_name = models.CharField('Имя контактного лица', max_length=50, null=True, blank=True)
+    contact_last_name = models.CharField('Фамилия контактного лица', max_length=50, null=True, blank=True)
     phone = models.CharField('Телефон', max_length=20)
     email = models.EmailField('Email')
     # ManyToManyField - связь с товарами через промежуточную модель
@@ -35,7 +37,15 @@ class Supplier(models.Model):
         verbose_name_plural = 'Поставщики'
 
     def __str__(self):
+        if self.contact_first_name and self.contact_last_name:
+            return f"{self.name} ({self.contact_first_name} {self.contact_last_name})"
         return self.name
+
+    @property
+    def full_name(self):
+        if self.contact_first_name and self.contact_last_name:
+            return f"{self.contact_first_name} {self.contact_last_name}"
+        return "Не указано"
 
 # Промежуточная модель для связи многие-ко-многим между Supplier и Product
 class SupplierProduct(models.Model):
@@ -119,13 +129,16 @@ class Sale(models.Model):
         ordering = ['-date']
 
     def __str__(self):
-        customer_name = self.customer.username if self.customer else 'Анонимный покупатель'
-        return f"Продажа {self.product.name} для {customer_name}"
+        return f"Продажа {self.product.name} для {self.first_name} {self.last_name}"
 
     def save(self, *args, **kwargs):
         if not self.total_price:
             self.total_price = self.quantity * self.price_per_unit
         super().save(*args, **kwargs)
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
 
 class Cart(models.Model):
     customer = models.OneToOneField(User, on_delete=models.CASCADE, related_name='cart', verbose_name='Покупатель')
