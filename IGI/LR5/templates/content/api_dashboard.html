@@ -5,53 +5,8 @@
 {% block content %}
 <div class="container mt-4">
     <div class="row">
-        <!-- Календарь и время -->
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Календарь</h5>
-                        <small>{{ local_time|date:"H:i" }}</small>
-                    </div>
-                </div>
-                <div class="card-body p-2">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <small class="text-muted">{{ user_timezone }}</small>
-                        <small class="text-muted">{{ local_time|date:"d/m/Y" }}</small>
-                    </div>
-                    <table class="table table-bordered table-sm text-center mb-2" style="font-size: 0.9rem;">
-                        <thead>
-                            <tr>
-                                <th>Пн</th>
-                                <th>Вт</th>
-                                <th>Ср</th>
-                                <th>Чт</th>
-                                <th>Пт</th>
-                                <th>Сб</th>
-                                <th>Вс</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for week in calendar_weeks %}
-                            <tr>
-                                {% for day in week %}
-                                <td {% if day.today %}class="table-primary fw-bold"{% endif %}>
-                                    {{ day.day }}
-                                </td>
-                                {% endfor %}
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    <div class="text-end">
-                        <small class="text-muted">UTC: {{ utc_time|date:"H:i" }}</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Random Dog API -->
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div class="card h-100">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">Random Dog API</h5>
@@ -64,7 +19,7 @@
         </div>
 
         <!-- Cat Facts API -->
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div class="card h-100">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">Cat Facts API</h5>

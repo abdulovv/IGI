@@ -12,9 +12,43 @@ import pytz
 class HomeView(TemplateView):
     template_name = 'content/home.html'
 
+    def generate_calendar(self):
+        # Получаем временную зону пользователя или используем Минск по умолчанию
+        user_timezone_str = self.request.session.get('user_timezone', 'Europe/Minsk')
+        try:
+            user_timezone = pytz.timezone(user_timezone_str)
+        except pytz.exceptions.UnknownTimeZoneError:
+            user_timezone = pytz.timezone('Europe/Minsk')
+            user_timezone_str = 'Europe/Minsk'
+
+        # Получаем текущее время в указанной временной зоне
+        now_utc = datetime.now(pytz.UTC)
+        now_local = now_utc.astimezone(user_timezone)
+
+        # Названия месяцев на русском
+        months = {
+            1: 'Январь', 2: 'Февраль', 3: 'Март', 4: 'Апрель',
+            5: 'Май', 6: 'Июнь', 7: 'Июль', 8: 'Август',
+            9: 'Сентябрь', 10: 'Октябрь', 11: 'Ноябрь', 12: 'Декабрь'
+        }
+        
+        # Создаем календарь
+        cal = calendar.monthcalendar(now_local.year, now_local.month)
+        
+        return {
+            'current_date': now_local.strftime('%d.%m.%Y'),
+            'current_time': now_local.strftime('%H:%M'),
+            'timezone': user_timezone_str,
+            'month': months[now_local.month],
+            'year': now_local.year,
+            'current_day': now_local.day,
+            'calendar_weeks': cal
+        }
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['latest_news'] = News.objects.filter(is_published=True).order_by('-created_at').first()
+        context['calendar_data'] = self.generate_calendar()
         return context
 
 class APIDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -24,44 +58,8 @@ class APIDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def test_func(self):
         return self.request.user.is_superuser
 
-    def get_calendar_weeks(self):
-        today = date.today()
-        cal = calendar.monthcalendar(today.year, today.month)
-        weeks = []
-        for week in cal:
-            week_days = []
-            for day in week:
-                if day == 0:
-                    week_days.append({'day': '', 'today': False})
-                else:
-                    week_days.append({
-                        'day': day,
-                        'today': day == today.day
-                    })
-            weeks.append(week_days)
-        return weeks
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
-        # Получаем временную зону пользователя из сессии или используем по умолчанию
-        user_timezone_str = self.request.session.get('user_timezone', 'Europe/Minsk')
-        try:
-            user_timezone = pytz.timezone(user_timezone_str)
-        except pytz.exceptions.UnknownTimeZoneError:
-            user_timezone = pytz.timezone('Europe/Minsk')
-
-        # Текущее время в UTC и локальное время
-        now_utc = datetime.now(pytz.UTC)
-        now_local = now_utc.astimezone(user_timezone)
-
-        context.update({
-            'user_timezone': user_timezone_str,
-            'utc_time': now_utc,
-            'local_time': now_local,
-            'current_date': now_local,
-            'calendar_weeks': self.get_calendar_weeks(),
-        })
         return context
 
 class AboutView(TemplateView):
