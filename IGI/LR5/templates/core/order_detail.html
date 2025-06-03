@@ -114,21 +114,8 @@
                 
                 <div class="total">
                     <span>Итого:</span>
-                    <span>{{ order.total|floatformat:2 }} руб. (BYN)</span>
+                    <span>{{ order.total|floatformat:2 }} руб.</span>
                 </div>
-
-                {% if converted_totals %}
-                    <hr style="margin: 10px 0;">
-                    <p style="font-size: 0.9em; margin-bottom: 5px; color: #555;">Примерно в других валютах (курс на момент просмотра):</p>
-                    {% for currency, amount in converted_totals.items %}
-                        {% if amount is not None %}
-                            <div class="total-converted" style="font-size: 0.9em; color: #555;">
-                                <span style="margin-left: 10px;"></span>
-                                <span>{{ amount|floatformat:2 }} {{ currency }}</span>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                {% endif %}
             </div>
 
             {% if order.promo %}

@@ -18,9 +18,6 @@ urlpatterns = [
     path('orders/', views.OrderListView.as_view(), name='order-list'),
     path('order/<int:pk>/update-status/', views.update_order_status, name='update-order-status'),
     path('product/<int:product_id>/update-quantity/', views.update_product_quantity, name='update-product-quantity'),
-    # Review URLs
-    path('review/<int:pk>/edit/', views.ReviewUpdateView.as_view(), name='review-edit'),
-    path('review/<int:pk>/delete/', views.ReviewDeleteView.as_view(), name='review-delete'),
     # Управление промокодами
     path('promos/', views.PromoListView.as_view(), name='promo-list'),
     path('promos/create/', views.PromoCreateView.as_view(), name='promo-create'),

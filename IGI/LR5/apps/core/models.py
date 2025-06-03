@@ -56,6 +56,7 @@ class SupplierProduct(models.Model):
 class Product(models.Model):
     # ForeignKey - связь с категорией (один ко многим)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products', verbose_name='Категория')
+    suppliers = models.ManyToManyField(Supplier, related_name='supplied_products', verbose_name='Поставщики')
     name = models.CharField('Название товара', max_length=200)
     article = models.CharField('Артикул', max_length=50, unique=True)
     description = models.TextField('Описание')
@@ -64,7 +65,6 @@ class Product(models.Model):
     image = models.ImageField('Изображение', upload_to='products/', blank=True, null=True)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     updated_at = models.DateTimeField('Дата обновления', auto_now=True)
-    suppliers = models.ManyToManyField(Supplier, related_name='product_suppliers', verbose_name='Поставщики')
 
     class Meta:
         verbose_name = 'Товар'
@@ -73,6 +73,13 @@ class Product(models.Model):
 
     def __str__(self):
         return f"{self.name} (Арт. {self.article})"
+
+    def update_quantity(self, new_quantity):
+        if new_quantity >= 0:
+            self.quantity = new_quantity
+            self.save()
+            return True
+        return False
 
     @property
     def current_supplier(self):
@@ -100,23 +107,25 @@ class Product(models.Model):
 
 class Sale(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='sales', verbose_name='Товар')
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='purchases', verbose_name='Покупатель', null=True, blank=True)
     quantity = models.PositiveIntegerField('Количество')
     price_per_unit = models.DecimalField('Цена за единицу', max_digits=10, decimal_places=2)
     total_price = models.DecimalField('Общая стоимость', max_digits=10, decimal_places=2)
     date = models.DateTimeField('Дата продажи', auto_now_add=True)
-    customer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='purchases', verbose_name='Покупатель')
 
     class Meta:
         verbose_name = 'Продажа'
         verbose_name_plural = 'Продажи'
         ordering = ['-date']
 
-    def save(self, *args, **kwargs):
-        self.total_price = self.quantity * self.price_per_unit
-        super().save(*args, **kwargs)
-
     def __str__(self):
-        return f"Продажа {self.product.name} ({self.date.strftime('%d.%m.%Y %H:%M')})"
+        customer_name = self.customer.username if self.customer else 'Анонимный покупатель'
+        return f"Продажа {self.product.name} для {customer_name}"
+
+    def save(self, *args, **kwargs):
+        if not self.total_price:
+            self.total_price = self.quantity * self.price_per_unit
+        super().save(*args, **kwargs)
 
 class Cart(models.Model):
     customer = models.OneToOneField(User, on_delete=models.CASCADE, related_name='cart', verbose_name='Покупатель')
@@ -156,44 +165,38 @@ class CartItem(models.Model):
     def total_price(self):
         return self.quantity * self.product.price
 
+    def save(self, *args, **kwargs):
+        if not self.quantity:
+            self.quantity = 1
+        if not self.added_at:
+            self.added_at = timezone.now()
+        if not self.total_price:
+            self.total_price = self.quantity * self.product.price
+        super().save(*args, **kwargs)
+
 class Order(models.Model):
     STATUS_CHOICES = [
-        # ('pending', 'Ожидает оплаты'), # Можно закомментировать или удалить
-        ('paid', 'Оплачен'), # Оставим, если вдруг понадобится
-        ('processing', 'Заказ оформлен'), # Изменен текст
+        ('pending', 'В обработке'),
+        ('confirmed', 'Подтвержден'),
         ('shipped', 'Отправлен'),
         ('delivered', 'Доставлен'),
-        ('cancelled', 'Отменён'),
+        ('cancelled', 'Отменен')
     ]
 
     customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', verbose_name='Покупатель')
-    status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='processing') # Изменен default
+    status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     updated_at = models.DateTimeField('Дата обновления', auto_now=True)
     shipping_address = models.TextField('Адрес доставки')
     phone = models.CharField('Телефон', max_length=20)
     email = models.EmailField('Email')
     comment = models.TextField('Комментарий к заказу', blank=True)
-    client_timezone = models.CharField('Часовой пояс клиента', max_length=50, blank=True, null=True) # New field
-    
-    # Для сохранения информации о ценах на момент заказа
-    subtotal = models.DecimalField('Сумма товаров', max_digits=10, decimal_places=2, default=0)
+    subtotal = models.DecimalField('Подытог', max_digits=10, decimal_places=2)
     shipping_cost = models.DecimalField('Стоимость доставки', max_digits=10, decimal_places=2, default=0)
-    total = models.DecimalField('Итоговая сумма', max_digits=10, decimal_places=2, default=0)
-    promo = models.ForeignKey(
-        'Promo',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='orders',
-        verbose_name='Примененный промокод'
-    )
-    discount = models.DecimalField(
-        'Сумма скидки',
-        max_digits=10,
-        decimal_places=2,
-        default=0
-    )
+    discount = models.DecimalField('Скидка', max_digits=10, decimal_places=2, default=0)
+    total = models.DecimalField('Итого', max_digits=10, decimal_places=2)
+    promo = models.ForeignKey('Promo', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Промокод')
+    client_timezone = models.CharField('Часовой пояс клиента', max_length=50, default='Europe/Minsk')
 
     class Meta:
         verbose_name = 'Заказ'
@@ -201,132 +204,105 @@ class Order(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Заказ #{self.id} ({self.get_status_display()})"
-
-    def get_created_at_in_client_timezone(self):
-        if self.client_timezone:
-            try:
-                tz = timezone.pytz.timezone(self.client_timezone)
-                return self.created_at.astimezone(tz)
-            except Exception: # Handle invalid timezone string or missing pytz
-                pass
-        return self.created_at # Fallback to server time
-
-    def save(self, *args, **kwargs):
-        if not self.total:
-            self.total = self.subtotal + self.shipping_cost
-        super().save(*args, **kwargs)
+        return f"Заказ #{self.id} от {self.customer.username}"
 
     @property
     def items_count(self):
-        return sum(item.quantity for item in self.items.all())
+        return self.items.count()
+
+    def get_created_at_in_client_timezone(self):
+        """Возвращает дату создания в часовом поясе клиента"""
+        if not self.client_timezone or self.client_timezone == "Europe/Moscow":
+            tz = pytz.timezone('Europe/Minsk')
+        else:
+            try:
+                tz = pytz.timezone(self.client_timezone)
+            except pytz.exceptions.UnknownTimeZoneError:
+                tz = pytz.timezone('Europe/Minsk')
+        
+        return self.created_at.astimezone(tz)
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items', verbose_name='Заказ')
-    product = models.ForeignKey(Product, on_delete=models.PROTECT, verbose_name='Товар')
-    quantity = models.PositiveIntegerField('Количество', validators=[MinValueValidator(1)])
-    price = models.DecimalField('Цена на момент заказа', max_digits=10, decimal_places=2)
-    
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='Товар')
+    quantity = models.PositiveIntegerField('Количество')
+    price = models.DecimalField('Цена за единицу', max_digits=10, decimal_places=2)
+
     class Meta:
         verbose_name = 'Товар в заказе'
         verbose_name_plural = 'Товары в заказе'
 
     def __str__(self):
-        return f"{self.product.name} ({self.quantity} шт.) в заказе #{self.order.id}"
+        return f"{self.product.name} в заказе #{self.order.id}"
 
     @property
     def total_price(self):
         return self.quantity * self.price
 
     def save(self, *args, **kwargs):
-        # Если цена не установлена, берем текущую цену товара
+        if not self.quantity:
+            self.quantity = 1
         if not self.price:
             self.price = self.product.price
         super().save(*args, **kwargs)
 
-class ProductReview(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews', verbose_name='Товар')
-    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='product_reviews', verbose_name='Покупатель')
-    rating = models.PositiveSmallIntegerField(
-        'Оценка',
-        validators=[MinValueValidator(1), MaxValueValidator(5)],
-        help_text='Оценка от 1 до 5'
-    )
-    text = models.TextField('Текст отзыва')
-    created_at = models.DateTimeField('Дата создания', auto_now_add=True)
-    updated_at = models.DateTimeField('Дата обновления', auto_now=True)
-    is_moderated = models.BooleanField('Прошел модерацию', default=False)
-
-    class Meta:
-        verbose_name = 'Отзыв о товаре'
-        verbose_name_plural = 'Отзывы о товарах'
-        ordering = ['-created_at']
-        unique_together = ['product', 'customer']
-
-    def __str__(self):
-        return f"Отзыв на {self.product.name} от {self.customer.username}"
-
 class Promo(models.Model):
-    code = models.CharField('Промокод', max_length=20, unique=True)
-    discount_amount = models.DecimalField(
-        'Сумма скидки',
-        max_digits=10,
-        decimal_places=2,
-        validators=[MinValueValidator(Decimal('0.01'))],
-        default=Decimal('0.00')
-    )
+    code = models.CharField('Код', max_length=20, unique=True)
+    discount_amount = models.DecimalField('Сумма скидки', max_digits=10, decimal_places=2)
     description = models.TextField('Описание', blank=True)
-    valid_from = models.DateTimeField('Действителен с', default=timezone.now)
-    valid_until = models.DateTimeField('Действителен до', default=get_default_valid_until)
-    min_order_amount = models.DecimalField(
-        'Минимальная сумма заказа',
-        max_digits=10,
-        decimal_places=2,
-        default=0
-    )
+    valid_from = models.DateTimeField('Действует с', default=timezone.now)
+    valid_until = models.DateTimeField('Действует до', default=get_default_valid_until)
+    min_order_amount = models.DecimalField('Минимальная сумма заказа', max_digits=10, decimal_places=2, default=0)
+    uses_count = models.PositiveIntegerField('Количество использований', default=0)
+    max_uses = models.PositiveIntegerField('Максимальное количество использований', null=True, blank=True)
     is_active = models.BooleanField('Активен', default=True)
-    created_at = models.DateTimeField('Дата создания', auto_now_add=True)
-    updated_at = models.DateTimeField('Дата обновления', auto_now=True)
 
     class Meta:
         verbose_name = 'Промокод'
         verbose_name_plural = 'Промокоды'
-        ordering = ['-created_at']
 
     def __str__(self):
         return self.code
 
-    def is_valid(self, order_amount, user):
+    def is_valid(self, order_amount, user=None):
+        now = timezone.now()
+        
         if not self.is_active:
             return False
-        if self.valid_from and timezone.now() < self.valid_from:
+        
+        if now < self.valid_from or now > self.valid_until:
             return False
-        if self.valid_until and timezone.now() > self.valid_until:
-            return False
+        
         if order_amount < self.min_order_amount:
             return False
-        if PromoUsage.objects.filter(promo=self, customer=user).exists():
+        
+        if self.max_uses and self.uses_count >= self.max_uses:
             return False
+        
+        if user and PromoUsage.objects.filter(promo=self, customer=user).exists():
+            return False
+        
         return True
 
     def calculate_discount(self, order_amount):
-        # For fixed amount, the discount is simply the discount_amount
-        # Ensure discount doesn't exceed order_amount
+        if not self.is_valid(order_amount):
+            return Decimal('0')
         return min(self.discount_amount, order_amount)
 
 class PromoUsage(models.Model):
     promo = models.ForeignKey(Promo, on_delete=models.CASCADE, related_name='usages', verbose_name='Промокод')
-    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='promo_usages', verbose_name='Покупатель')
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Покупатель')
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, verbose_name='Заказ', null=True, blank=True)
     used_at = models.DateTimeField('Дата использования', auto_now_add=True)
+    discount_amount = models.DecimalField('Сумма скидки', max_digits=10, decimal_places=2, default=0)
 
     class Meta:
         verbose_name = 'Использование промокода'
         verbose_name_plural = 'Использования промокодов'
-        ordering = ['-used_at']
-        unique_together = ['promo', 'customer'] # Each customer can use a promo only once
+        unique_together = ['promo', 'customer']
 
     def __str__(self):
-        return f"{self.customer.username} использовал {self.promo.code}"
+        return f"Промокод {self.promo.code} использован {self.customer.username}"
 
 class SupplierPurchase(models.Model):
     # ForeignKey - связи с поставщиком и товаром (один ко многим)

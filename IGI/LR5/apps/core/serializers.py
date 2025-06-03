@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, Supplier, Product, Sale, Cart, CartItem, Order, OrderItem, ProductReview, Promo, PromoUsage
+from .models import Category, Supplier, Product, Sale, Cart, CartItem, Order, OrderItem, Promo, PromoUsage
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,19 +9,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class SupplierSerializer(serializers.ModelSerializer):
     class Meta:
         model = Supplier
-        fields = ['id', 'name', 'address', 'phone', 'email']
-
-class ProductReviewSerializer(serializers.ModelSerializer):
-    customer_username = serializers.CharField(source='customer.username', read_only=True)
-    
-    class Meta:
-        model = ProductReview
-        fields = [
-            'id', 'product', 'customer', 'customer_username',
-            'rating', 'text', 'created_at', 'updated_at',
-            'is_moderated'
-        ]
-        read_only_fields = ['customer', 'is_moderated']
+        fields = ['id', 'name', 'address', 'email', 'phone', 'is_active']
 
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
@@ -37,21 +25,13 @@ class ProductSerializer(serializers.ModelSerializer):
         many=True,
         source='suppliers'
     )
-    rating = serializers.DecimalField(
-        max_digits=3,
-        decimal_places=2,
-        read_only=True
-    )
-    reviews_count = serializers.IntegerField(read_only=True)
-    reviews = ProductReviewSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'article', 'category', 'category_id',
             'description', 'price', 'quantity', 'suppliers',
-            'supplier_ids', 'image', 'created_at', 'updated_at',
-            'rating', 'reviews_count', 'reviews'
+            'supplier_ids', 'image', 'created_at', 'updated_at'
         ]
 
 class SaleSerializer(serializers.ModelSerializer):
@@ -87,9 +67,9 @@ class CartItemSerializer(serializers.ModelSerializer):
         model = CartItem
         fields = [
             'id', 'cart', 'product', 'product_id',
-            'quantity', 'added_at', 'total_price'
+            'quantity', 'price', 'total_price'
         ]
-        read_only_fields = ['cart']
+        read_only_fields = ['cart', 'price']
 
     def validate_quantity(self, value):
         if value < 1:
@@ -154,16 +134,13 @@ class PromoSerializer(serializers.ModelSerializer):
         ]
 
 class PromoUsageSerializer(serializers.ModelSerializer):
-    promo_code = serializers.CharField(source='promo.code', read_only=True)
-    customer_username = serializers.CharField(source='customer.username', read_only=True)
-    
     class Meta:
         model = PromoUsage
         fields = [
-            'id', 'promo', 'promo_code', 
-            'customer', 'customer_username', 'used_at'
+            'id', 'promo', 'customer', 'order',
+            'used_at', 'discount_amount'
         ]
-        read_only_fields = ['promo', 'customer', 'used_at']
+        read_only_fields = ['used_at']
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
@@ -186,10 +163,11 @@ class OrderSerializer(serializers.ModelSerializer):
         ]
 
 class CreateOrderFromCartSerializer(serializers.Serializer):
-    shipping_address = serializers.CharField(required=True)
-    phone = serializers.CharField(required=True)
-    email = serializers.EmailField(required=True)
+    shipping_address = serializers.CharField()
+    phone = serializers.CharField()
+    email = serializers.EmailField()
     comment = serializers.CharField(required=False, allow_blank=True)
+    promo_code = serializers.CharField(required=False, allow_blank=True)
 
     def create(self, validated_data):
         user = self.context['request'].user

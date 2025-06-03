@@ -52,7 +52,7 @@ class CustomUserCreationForm(UserCreationForm):
             valid_format = any(re.match(pattern, cleaned_number) for pattern in patterns)
             if not valid_format:
                 raise forms.ValidationError(
-                    'Введите корректный номер телефона в формате: +375XXXXXXXXX, 375XXXXXXXXX или 8XXXXXXXXXX'
+                    'Введите корректный номер телефона в формате: +375XXXXXXXXX'
                 )
             
             # Преобразуем все форматы к единому виду +375XXXXXXXXX

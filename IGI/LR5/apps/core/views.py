@@ -7,16 +7,15 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
 from django.template.loader import render_to_string
-from .models import Product, Category, Supplier, Sale, Cart, CartItem, Order, OrderItem, Promo, PromoUsage, ProductReview, SupplierPurchase
+from .models import Product, Category, Supplier, Sale, Cart, CartItem, Order, OrderItem, Promo, PromoUsage, SupplierPurchase
 from django.utils import timezone
 import pytz # Добавляем импорт pytz
 from decimal import Decimal
-from .services import get_exchange_rates
 from django.contrib.auth import get_user_model
 import calendar # Добавляем импорт calendar
 from datetime import datetime # Добавляем импорт datetime
 from django.conf import settings
-from .forms import ProductQuantityUpdateForm, ProductReviewUpdateForm, SupplierPurchaseForm # Import ProductReviewUpdateForm and SupplierPurchaseForm
+from .forms import ProductQuantityUpdateForm, SupplierPurchaseForm
 import matplotlib.pyplot as plt
 import io
 import base64
@@ -103,7 +102,6 @@ class ProductDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         product = self.get_object()
-        context['reviews'] = product.reviews.filter(is_moderated=True).order_by('-created_at')
         context['related_products'] = Product.objects.filter(category=product.category).exclude(id=product.id).order_by('?')[:4]
         
         user_timezone_str = self.request.session.get('user_timezone', 'Europe/Minsk')
@@ -483,20 +481,6 @@ class OrderDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context['order_items'] = self.object.items.select_related('product').all()
         
-        # Get exchange rates
-        target_currencies = ['USD', 'EUR', 'RUB']
-        exchange_rates = get_exchange_rates(base_currency='BYN', target_currencies=target_currencies)
-        
-        context['exchange_rates'] = exchange_rates
-        context['converted_totals'] = {}
-        
-        if self.object.total and exchange_rates:
-            for currency, rate in exchange_rates.items():
-                if rate is not None:
-                    context['converted_totals'][currency] = (self.object.total * rate).quantize(Decimal('0.01'))
-                else:
-                    context['converted_totals'][currency] = None
-        
         # Добавляем таймзону пользователя для форматирования дат в шаблоне
         user_timezone_str = self.request.session.get('django_timezone', 'Europe/Minsk') # Минск по умолчанию
         context['user_timezone'] = user_timezone_str
@@ -585,43 +569,8 @@ class PromoDeleteView(StaffRequiredMixin, DeleteView):
     login_url = 'login'
 
     def delete(self, request, *args, **kwargs):
-        messages.success(request, 'Промокод успешно удален')
+        messages.success(request, 'Промокод успешно удален.')
         return super().delete(request, *args, **kwargs)
-
-class ReviewUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    model = ProductReview
-    form_class = ProductReviewUpdateForm
-    template_name = 'core/review_form.html'
-    context_object_name = 'review'
-
-    def test_func(self):
-        review = self.get_object()
-        return self.request.user == review.customer
-
-    def get_success_url(self):
-        messages.success(self.request, "Ваш отзыв успешно обновлен.")
-        return reverse('core:product-detail', kwargs={'pk': self.object.product.pk}) # Redirect to product detail
-
-    def form_invalid(self, form):
-        messages.error(self.request, "Пожалуйста, исправьте ошибки в форме.")
-        return super().form_invalid(form)
-
-class ReviewDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-    model = ProductReview
-    template_name = 'core/review_confirm_delete.html'
-    context_object_name = 'review'
-
-    def test_func(self):
-        review = self.get_object()
-        return self.request.user == review.customer
-
-    def get_success_url(self):
-        messages.success(self.request, "Ваш отзыв успешно удален.")
-        return reverse('core:product-detail', kwargs={'pk': self.object.product.pk})
-
-    # Optionally, to prevent deletion via GET request if you want to be stricter
-    def get(self, request, *args, **kwargs):
-        return self.post(request, *args, **kwargs)
 
 def generate_bar_chart(labels, data, title, ylabel):
     """Генерирует столбчатую диаграмму"""
