@@ -17,6 +17,12 @@ import calendar # Добавляем импорт calendar
 from datetime import datetime # Добавляем импорт datetime
 from django.conf import settings
 from .forms import ProductQuantityUpdateForm, ProductReviewUpdateForm, SupplierPurchaseForm # Import ProductReviewUpdateForm and SupplierPurchaseForm
+import matplotlib.pyplot as plt
+import io
+import base64
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+import numpy as np
 
 class ProductListView(ListView):
     model = Product
@@ -617,6 +623,74 @@ class ReviewDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     def get(self, request, *args, **kwargs):
         return self.post(request, *args, **kwargs)
 
+def generate_bar_chart(labels, data, title, ylabel):
+    """Генерирует столбчатую диаграмму"""
+    fig = Figure(figsize=(10, 6))
+    ax = fig.add_subplot(111)
+    
+    # Создаем столбчатую диаграмму
+    bars = ax.bar(range(len(data)), data)
+    
+    # Настраиваем внешний вид
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels, rotation=45, ha='right')
+    ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    
+    # Добавляем значения над столбцами
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2., height,
+                f'{height:,.0f}',
+                ha='center', va='bottom')
+    
+    # Автоматически регулируем размещение подписей
+    fig.tight_layout()
+    
+    # Сохраняем график в байтовый поток
+    buf = io.BytesIO()
+    canvas = FigureCanvas(fig)
+    canvas.print_png(buf)
+    plt.close(fig)
+    
+    # Кодируем в base64
+    image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    return f'data:image/png;base64,{image_base64}'
+
+def generate_pie_chart(labels, data, title):
+    """Генерирует круговую диаграмму"""
+    fig = Figure(figsize=(10, 8))
+    ax = fig.add_subplot(111)
+    
+    # Создаем круговую диаграмму
+    wedges, texts, autotexts = ax.pie(data, labels=labels, autopct='%1.1f%%',
+                                     textprops={'fontsize': 8})
+    
+    # Добавляем заголовок
+    ax.set_title(title)
+    
+    # Делаем диаграмму круглой
+    ax.axis('equal')
+    
+    # Добавляем легенду
+    ax.legend(wedges, labels,
+             title="Категории",
+             loc="center left",
+             bbox_to_anchor=(1, 0, 0.5, 1))
+    
+    # Автоматически регулируем размещение подписей
+    fig.tight_layout()
+    
+    # Сохраняем график в байтовый поток
+    buf = io.BytesIO()
+    canvas = FigureCanvas(fig)
+    canvas.print_png(buf)
+    plt.close(fig)
+    
+    # Кодируем в base64
+    image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    return f'data:image/png;base64,{image_base64}'
+
 class StatisticsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'core/statistics.html'
     login_url = reverse_lazy('accounts:login')
@@ -626,16 +700,16 @@ class StatisticsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Статистика'  # Изменяем заголовок
+        context['page_title'] = 'Статистика'
 
         # --- Таймзоны и Даты ---
         user_timezone_str = self.request.session.get('user_timezone', 'Europe/Minsk')
         try:
             user_tz = pytz.timezone(user_timezone_str)
         except pytz.UnknownTimeZoneError:
-            user_tz = pytz.timezone('Europe/Minsk') # Фолбэк на Минск
+            user_tz = pytz.timezone('Europe/Minsk')
             user_timezone_str = 'Europe/Minsk'
-            self.request.session['user_timezone'] = user_timezone_str # Обновляем сессию, если таймзона была некорректной
+            self.request.session['user_timezone'] = user_timezone_str
 
         now_utc = timezone.now()
         now_local = now_utc.astimezone(user_tz)
@@ -643,98 +717,6 @@ class StatisticsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['user_timezone'] = str(user_tz)
         context['current_time_utc'] = now_utc
         context['current_time_local'] = now_local
-        
-        # Календарь текущего месяца для локальной таймзоны
-        cal = calendar.HTMLCalendar(firstweekday=0) # 0 = Понедельник
-        context['calendar_html'] = cal.formatmonth(now_local.year, now_local.month)
-        context['calendar_month_year'] = now_local.strftime('%B %Y')
-
-        # 1. Список товаров в алфавитном порядке
-        context['products_alphabetical'] = Product.objects.order_by('name').all()
-
-        # 2. Общая сумма продаж (учитываем только завершенные/оплаченные заказы, если есть такой статус)
-        # Пока считаем по всем заказам, где есть total. Если нужно фильтровать по статусу, добавьте .filter(status='paid') или аналогичный
-        total_sales_query = Order.objects.aggregate(total_revenue=Sum('total'))
-        context['total_revenue'] = total_sales_query['total_revenue'] if total_sales_query['total_revenue'] else Decimal('0.00')
-        
-        # 3. Список клиентов в алфавитном порядке (фильтруем, чтобы не показывать персонал)
-        User = get_user_model()
-        context['clients_alphabetical'] = User.objects.filter(is_staff=False, is_superuser=False).order_by('username').all()
-        
-        # 4. Статистика по суммам продаж (Order.total)
-        order_totals = list(Order.objects.values_list('total', flat=True).exclude(total__isnull=True))
-        # Убедимся, что это Decimal для единообразия, если пришли из БД как float
-        order_totals = [Decimal(str(t)) for t in order_totals]
-
-        if order_totals:
-            # Среднее
-            avg_sale_query = Order.objects.aggregate(avg_total=Avg('total'))
-            context['average_sale_amount'] = avg_sale_query['avg_total']
-
-            # Медиана
-            context['median_sale_amount'] = self._calculate_median(order_totals)
-
-            # Мода
-            context['mode_sale_amount'] = self._calculate_mode(order_totals)
-        else:
-            context['average_sale_amount'] = Decimal('0.00')
-            context['median_sale_amount'] = Decimal('0.00')
-            context['mode_sale_amount'] = "N/A"
-
-        # 5. Статистика по возрасту клиентов
-        User = get_user_model()
-        # Получаем только тех, у кого указана дата рождения и кто не персонал
-        clients_with_birth_date = User.objects.filter(
-            is_staff=False, 
-            is_superuser=False,
-            profile__birth_date__isnull=False # Обращаемся через profile
-        ).values_list('profile__birth_date', flat=True) # Обращаемся через profile
-
-        client_ages = []
-        if clients_with_birth_date:
-            from datetime import date # Для расчета возраста
-            today = date.today()
-            for birth_date in clients_with_birth_date:
-                if birth_date:
-                    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-                    client_ages.append(age)
-        
-        if client_ages:
-            context['average_client_age'] = sum(client_ages) / len(client_ages)
-            context['median_client_age'] = self._calculate_median(client_ages) # Используем существующий метод
-        else:
-            context['average_client_age'] = "N/A"
-            context['median_client_age'] = "N/A"
-
-        # 6. Какая категория самая популярная (по количеству проданных единиц)
-        category_popularity_query = OrderItem.objects.values(
-            'product__category__id', 'product__category__name'
-        ).annotate(
-            total_sold_quantity_agg=Sum('quantity')
-        ).filter(total_sold_quantity_agg__isnull=False).order_by('-total_sold_quantity_agg')
-
-        context['category_popularity'] = [
-            {'id': item['product__category__id'], 'name': item['product__category__name'], 'total_sold_quantity': item['total_sold_quantity_agg']}
-            for item in category_popularity_query
-        ]
-        context['most_popular_category_by_quantity'] = context['category_popularity'][0] if context['category_popularity'] else None
-        context['category_popularity_labels'] = [cat['name'] for cat in context['category_popularity']]
-        context['category_popularity_data'] = [cat['total_sold_quantity'] for cat in context['category_popularity']]
-
-        # 7. Какая категория приносит наибольшую прибыль (по сумме OrderItem.price * OrderItem.quantity)
-        category_profitability_query = OrderItem.objects.values(
-            'product__category__id', 'product__category__name'
-        ).annotate(
-            total_revenue_agg=Sum(F('price') * F('quantity'))
-        ).filter(total_revenue_agg__isnull=False).order_by('-total_revenue_agg')
-
-        context['category_profitability'] = [
-            {'id': item['product__category__id'], 'name': item['product__category__name'], 'total_revenue_from_category': item['total_revenue_agg']}
-            for item in category_profitability_query
-        ]
-        context['most_profitable_category'] = context['category_profitability'][0] if context['category_profitability'] else None
-        context['category_profitability_labels'] = [cat['name'] for cat in context['category_profitability']]
-        context['category_profitability_data'] = [cat['total_revenue_from_category'] for cat in context['category_profitability']]
 
         # --- Топ-3 продаваемых товара ---
         # По количеству
@@ -744,12 +726,17 @@ class StatisticsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             total_quantity_sold_agg=Sum('quantity')
         ).filter(total_quantity_sold_agg__gt=0).order_by('-total_quantity_sold_agg')[:3]
         
-        context['top_products_by_quantity'] = [
+        top_products_by_quantity = [
             {'id':p['product__id'], 'name':p['product__name'], 'total_quantity_sold':p['total_quantity_sold_agg']}
             for p in top_products_qty_query
         ]
-        context['top_products_by_quantity_labels'] = [p['name'] for p in context['top_products_by_quantity']]
-        context['top_products_by_quantity_data'] = [p['total_quantity_sold'] for p in context['top_products_by_quantity']]
+        labels = [p['name'] for p in top_products_by_quantity]
+        data = [p['total_quantity_sold'] for p in top_products_by_quantity]
+        context['top_products_quantity_chart'] = generate_bar_chart(
+            labels, data, 
+            'Топ-3 продаваемых товара (по количеству)', 
+            'Количество продаж'
+        )
 
         # По сумме выручки
         top_products_rev_query = OrderItem.objects.values(
@@ -758,81 +745,64 @@ class StatisticsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             total_revenue_generated_agg=Sum(F('price') * F('quantity'))
         ).filter(total_revenue_generated_agg__gt=0).order_by('-total_revenue_generated_agg')[:3]
 
-        context['top_products_by_revenue'] = [
+        top_products_by_revenue = [
             {'id':p['product__id'], 'name':p['product__name'], 'total_revenue_generated':p['total_revenue_generated_agg']}
             for p in top_products_rev_query
         ]
-        context['top_products_by_revenue_labels'] = [p['name'] for p in context['top_products_by_revenue']]
-        context['top_products_by_revenue_data'] = [p['total_revenue_generated'] for p in context['top_products_by_revenue']]
+        labels = [p['name'] for p in top_products_by_revenue]
+        data = [float(p['total_revenue_generated']) for p in top_products_by_revenue]
+        context['top_products_revenue_chart'] = generate_bar_chart(
+            labels, data,
+            'Топ-3 продаваемых товара (по выручке)',
+            'Выручка (руб.)'
+        )
 
-        # --- Распределение заказов по статусам ---
-        order_status_data = Order.objects.values('status').annotate(count=Count('status')).order_by('status')
-        status_display_map = dict(Order.STATUS_CHOICES) # Создаем словарь для сопоставления
-        context['order_status_labels'] = [status_display_map.get(s['status'], str(s['status']).capitalize()) for s in order_status_data]
-        context['order_status_counts'] = [s['count'] for s in order_status_data]
+        # --- Популярность категорий ---
+        category_popularity_query = OrderItem.objects.values(
+            'product__category__id', 'product__category__name'
+        ).annotate(
+            total_sold_quantity_agg=Sum('quantity')
+        ).filter(total_sold_quantity_agg__isnull=False).order_by('-total_sold_quantity_agg')
 
-        # --- Новая диаграмма: Распределение товаров для животных (собаки/кошки) ---
-        animal_categories = Category.objects.filter(Q(name__icontains='кошек') | Q(name__icontains='собак'))
-        animal_category_data = []
-        for category in animal_categories:
-            animal_category_data.append({
-                'name': category.name,
-                'count': Product.objects.filter(category=category).count()
-            })
-        context['animal_category_labels'] = [data['name'] for data in animal_category_data]
-        context['animal_category_counts'] = [data['count'] for data in animal_category_data]
+        category_popularity = [
+            {'id': item['product__category__id'], 'name': item['product__category__name'], 'total_sold_quantity': item['total_sold_quantity_agg']}
+            for item in category_popularity_query
+        ]
+        labels = [cat['name'] for cat in category_popularity]
+        data = [cat['total_sold_quantity'] for cat in category_popularity]
+        context['category_popularity_chart'] = generate_pie_chart(
+            labels, data,
+            'Популярность категорий (кол-во)'
+        )
 
-        # --- Новая диаграмма: Распределение товаров по всем категориям ---
+        # --- Прибыльность категорий ---
+        category_profitability_query = OrderItem.objects.values(
+            'product__category__id', 'product__category__name'
+        ).annotate(
+            total_revenue_agg=Sum(F('price') * F('quantity'))
+        ).filter(total_revenue_agg__isnull=False).order_by('-total_revenue_agg')
+
+        category_profitability = [
+            {'id': item['product__category__id'], 'name': item['product__category__name'], 'total_revenue_from_category': item['total_revenue_agg']}
+            for item in category_profitability_query
+        ]
+        labels = [cat['name'] for cat in category_profitability]
+        data = [float(cat['total_revenue_from_category']) for cat in category_profitability]
+        context['category_profitability_chart'] = generate_pie_chart(
+            labels, data,
+            'Прибыльность категорий (сумма)'
+        )
+
+        # --- Распределение товаров по всем категориям ---
         all_categories_data = Category.objects.annotate(product_count=Count('products')).order_by('-product_count')
-        context['all_category_product_labels'] = [cat.name for cat in all_categories_data if cat.product_count > 0]
-        context['all_category_product_counts'] = [cat.product_count for cat in all_categories_data if cat.product_count > 0]
+        labels = [cat.name for cat in all_categories_data if cat.product_count > 0]
+        data = [cat.product_count for cat in all_categories_data if cat.product_count > 0]
+        context['all_category_product_chart'] = generate_pie_chart(
+            labels, data,
+            'Распределение товаров по всем категориям'
+        )
 
         return context
-
-    def _calculate_median(self, data_list):
-        if not data_list:
-            return Decimal('0.00')
-        sorted_list = sorted(data_list)
-        n = len(sorted_list)
-        mid = n // 2
-        if n % 2 == 0:
-            # Четное количество, берем среднее двух центральных
-            return (sorted_list[mid - 1] + sorted_list[mid]) / Decimal(2)
-        else:
-            # Нечетное количество, берем центральный элемент
-            return sorted_list[mid]
-
-    def _calculate_mode(self, data_list):
-        from collections import Counter
-        if not data_list:
-            return "N/A"
-        
-        counts = Counter(data_list)
-        max_freq = 0
-        modes = []
-        
-        # Находим максимальную частоту
-        for value, freq in counts.items():
-            if freq > max_freq:
-                max_freq = freq
-        
-        # Если все значения встречаются одинаково часто (и это > 1 значение), моды нет
-        if max_freq == 1 and len(counts) > 1 and len(set(counts.values())) == 1:
-             return "Все значения уникальны" if len(data_list) == len(counts) else "Нет явной моды"
-        
-        # Находим все значения с максимальной частотой
-        for value, freq in counts.items():
-            if freq == max_freq:
-                modes.append(value)
-        
-        if not modes:
-            return "N/A"
-        elif len(modes) == len(data_list) and len(set(data_list)) == 1: # Все элементы одинаковы
-             return modes[0]
-        elif len(modes) == len(data_list): # Все элементы встречаются одинаково часто (например, [1,1,2,2])
-            return "Нет явной моды" if len(set(counts.values())) == 1 and len(counts) > 1 else ", ".join(map(str, sorted(list(set(modes)))))
-
-        return ", ".join(map(str, sorted(list(set(modes))))) # Возвращаем уникальные моды, отсортированные
 
 @login_required
 @user_passes_test(lambda u: u.is_staff or u.is_superuser)

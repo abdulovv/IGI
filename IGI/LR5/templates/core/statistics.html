@@ -20,11 +20,7 @@
             <div class="card chart-card h-100">
                 <div class="card-body">
                     <h5 class="card-title">Топ-3 продаваемых товара (по количеству)</h5>
-                    {% if top_products_by_quantity_labels %}
-                        <canvas id="topProductsByQuantityChart"></canvas>
-                    {% else %}
-                        <p class="text-center text-muted">Нет данных</p>
-                    {% endif %}
+                    <img src="{{ top_products_quantity_chart }}" class="img-fluid" alt="Топ-3 продаваемых товара (по количеству)">
                 </div>
             </div>
         </div>
@@ -34,217 +30,55 @@
             <div class="card chart-card h-100">
                 <div class="card-body">
                     <h5 class="card-title">Топ-3 продаваемых товара (по выручке)</h5>
-                    {% if top_products_by_revenue_labels %}
-                        <canvas id="topProductsByRevenueChart"></canvas>
-                    {% else %}
-                        <p class="text-center text-muted">Нет данных</p>
-                    {% endif %}
+                    <img src="{{ top_products_revenue_chart }}" class="img-fluid" alt="Топ-3 продаваемых товара (по выручке)">
                 </div>
             </div>
         </div>
 
         {# Популярность категорий #}
-        <div class="col-lg-6 col-md-12 large-pie-chart-container">
+        <div class="col-lg-6 col-md-12">
             <div class="card chart-card h-100">
                 <div class="card-body">
                     <h5 class="card-title">Популярность категорий (кол-во)</h5>
-                     {% if category_popularity_labels %}
-                        <canvas id="categoryPopularityChart"></canvas>
-                    {% else %}
-                        <p class="text-center text-muted">Нет данных</p>
-                    {% endif %}
+                    <img src="{{ category_popularity_chart }}" class="img-fluid" alt="Популярность категорий">
                 </div>
             </div>
         </div>
 
         {# Прибыльность категорий #}
-        <div class="col-lg-6 col-md-12 large-pie-chart-container">
+        <div class="col-lg-6 col-md-12">
             <div class="card chart-card h-100">
                 <div class="card-body">
                     <h5 class="card-title">Прибыльность категорий (сумма)</h5>
-                    {% if category_profitability_labels %}
-                        <canvas id="categoryProfitabilityChart"></canvas>
-                    {% else %}
-                        <p class="text-center text-muted">Нет данных</p>
-                    {% endif %}
+                    <img src="{{ category_profitability_chart }}" class="img-fluid" alt="Прибыльность категорий">
                 </div>
             </div>
         </div>
 
         {# Распределение товаров по всем категориям #}
-        <div class="col-lg-6 col-md-12 large-pie-chart-container">
+        <div class="col-lg-6 col-md-12">
             <div class="card chart-card h-100">
                 <div class="card-body">
                     <h5 class="card-title">Распределение товаров по всем категориям</h5>
-                    {% if all_category_product_labels and all_category_product_counts %}
-                        <canvas id="allCategoryProductChart"></canvas>
-                    {% else %}
-                        <p class="text-center text-muted">Нет данных</p>
-                    {% endif %}
+                    <img src="{{ all_category_product_chart }}" class="img-fluid" alt="Распределение товаров по категориям">
                 </div>
             </div>
         </div>
-    </div> {# Конец div.charts-container #}
+    </div>
+</div>
 
-</div> {# Конец div.container #}
-
-{% block extra_js %}
 <style>
 .chart-card .card-body {
-    min-height: 350px; /* Минимальная высота для тела карточки с диаграммой */
-    display: flex;
-    flex-direction: column;
-}
-.chart-card canvas {
-    flex-grow: 1; /* Позволяет canvas занять доступное место */
-    max-height: 300px; /* Ограничение, чтобы не было слишком высоким */
+    padding: 1.25rem;
 }
 
-.large-pie-chart-container .chart-card .card-body {
-    min-height: 500px;
-}
-.large-pie-chart-container .chart-card canvas {
-    max-height: 450px;
+.chart-card img {
+    max-width: 100%;
+    height: auto;
 }
 
-.large-bar-chart-wrapper {
-    position: relative;
-    height: 350px; /* Increased height for the bar chart container */
-    width: 100%;
-    margin-bottom: 20px; /* Added some space below each chart */
+.charts-container .card {
+    margin-bottom: 2rem;
 }
 </style>
-
-{{ top_products_by_quantity_labels|json_script:"id_top_products_by_quantity_labels" }}
-{{ top_products_by_quantity_data|json_script:"id_top_products_by_quantity_data" }}
-{{ top_products_by_revenue_labels|json_script:"id_top_products_by_revenue_labels" }}
-{{ top_products_by_revenue_data|json_script:"id_top_products_by_revenue_data" }}
-{{ category_popularity_labels|json_script:"id_category_popularity_labels" }}
-{{ category_popularity_data|json_script:"id_category_popularity_data" }}
-{{ category_profitability_labels|json_script:"id_category_profitability_labels" }}
-{{ category_profitability_data|json_script:"id_category_profitability_data" }}
-{{ all_category_product_labels|json_script:"id_all_category_product_labels" }}
-{{ all_category_product_counts|json_script:"id_all_category_product_counts" }}
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const top_products_by_quantity_labels = JSON.parse(document.getElementById('id_top_products_by_quantity_labels').textContent);
-    const top_products_by_quantity_data = JSON.parse(document.getElementById('id_top_products_by_quantity_data').textContent);
-    const top_products_by_revenue_labels = JSON.parse(document.getElementById('id_top_products_by_revenue_labels').textContent);
-    const top_products_by_revenue_data = JSON.parse(document.getElementById('id_top_products_by_revenue_data').textContent);
-    const category_popularity_labels = JSON.parse(document.getElementById('id_category_popularity_labels').textContent);
-    const category_popularity_data = JSON.parse(document.getElementById('id_category_popularity_data').textContent);
-    const category_profitability_labels = JSON.parse(document.getElementById('id_category_profitability_labels').textContent);
-    const category_profitability_data = JSON.parse(document.getElementById('id_category_profitability_data').textContent);
-    const all_category_product_labels = JSON.parse(document.getElementById('id_all_category_product_labels').textContent);
-    const all_category_product_counts = JSON.parse(document.getElementById('id_all_category_product_counts').textContent);
-
-    function createBarChart(canvasId, labels, data, datasetLabel, backgroundColor = 'rgba(75, 192, 192, 0.2)', borderColor = 'rgba(75, 192, 192, 1)') {
-        const ctx = document.getElementById(canvasId);
-        if (ctx && labels && Array.isArray(labels) && data && Array.isArray(data)) {
-            const dataValues = data.filter(val => typeof val === 'number' && isFinite(val));
-            const dataMax = dataValues.length > 0 ? Math.max(...dataValues) : 0;
-
-            let yAxisSuggestedMax;
-            if (dataMax === 0) {
-                yAxisSuggestedMax = 5; // Default y-axis from 0 to 5 if no data or all data is zero
-            } else {
-                let padding = Math.max(1, dataMax * 0.1); // Base padding: 10% or at least 1 unit
-                if (dataMax < 5) { // For very small values
-                    padding = Math.max(padding, 1);
-                }
-                // For quantity chart, give a bit more headroom if values are small integers
-                if (canvasId === 'topProductsByQuantityChart' && dataMax < 10) {
-                     padding = Math.max(padding, 2);
-                }
-                yAxisSuggestedMax = Math.ceil(dataMax + padding);
-            }
-
-            const allDataAreIntegers = dataValues.every(val => Number.isInteger(val));
-
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: datasetLabel,
-                        data: data,
-                        backgroundColor: backgroundColor,
-                        borderColor: borderColor,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            suggestedMax: yAxisSuggestedMax,
-                            ticks: {
-                                precision: (canvasId === 'topProductsByQuantityChart' && allDataAreIntegers) ? 0 : undefined
-                                // For the quantity chart, if all data points are integers, display tick labels as integers.
-                            }
-                        }
-                    },
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
-        }
-    }
-
-    function createPieChart(canvasId, labels, data, titleText) {
-        const ctx = document.getElementById(canvasId);
-        if (ctx && labels && Array.isArray(labels) && labels.length > 0 && data && Array.isArray(data) && data.length > 0) {
-            new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: titleText,
-                        data: data,
-                        backgroundColor: [
-                            'rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)',
-                            'rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)',
-                            'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)',
-                            'rgba(199, 199, 199, 0.7)', 'rgba(83, 102, 255, 0.7)',
-                            'rgba(100, 255, 64, 0.7)', 'rgba(255, 99, 255, 0.7)'
-                        ],
-                        borderColor: [
-                            'rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)',
-                            'rgba(255, 206, 86, 1)', 'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)',
-                            'rgba(199, 199, 199, 1)', 'rgba(83, 102, 255, 1)',
-                            'rgba(100, 255, 64, 1)', 'rgba(255, 99, 255, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        title: {
-                            display: true,
-                            text: titleText
-                        }
-                    }
-                }
-            });
-        }
-    }
-
-    // Инициализация всех диаграмм
-    createBarChart('topProductsByQuantityChart', top_products_by_quantity_labels, top_products_by_quantity_data, 'Количество продано');
-    createBarChart('topProductsByRevenueChart', top_products_by_revenue_labels, top_products_by_revenue_data, 'Выручка', 'rgba(153, 102, 255, 0.2)', 'rgba(153, 102, 255, 1)');
-    createPieChart('categoryPopularityChart', category_popularity_labels, category_popularity_data, 'Популярность категорий (кол-во)');
-    createPieChart('categoryProfitabilityChart', category_profitability_labels, category_profitability_data, 'Прибыльность категорий (сумма)');
-    createPieChart('allCategoryProductChart', all_category_product_labels, all_category_product_counts, 'Распределение товаров по всем категориям');
-});
-</script>
-{% endblock %}
-
 {% endblock %} 
