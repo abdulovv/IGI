@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}FAQ{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">FAQ - Часто задаваемые вопросы</h1>
+    
+    <div class="accordion" id="faqAccordion">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingOne">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                    Какие способы доставки у вас есть?
+                </button>
+            </h2>
+            <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    Мы предлагаем курьерскую доставку по Минску в течение 1-2 рабочих дней, а также доставку почтой по всей Беларуси (2-5 рабочих дней). Возможен самовывоз из нашего магазина по адресу: г. Минск, ул. Примерная, д. 123.
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingTwo">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                    Как я могу оплатить свой заказ?
+                </button>
+            </h2>
+            <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    Вы можете оплатить заказ онлайн банковской картой (Visa, Mastercard, Белкарт), через систему ЕРИП, а также наличными или картой курьеру при получении (только для Минска).
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingThree">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                    Есть ли у вас скидки или программа лояльности?
+                </button>
+            </h2>
+            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    Да, у нас регулярно проходят акции на различные группы товаров. Также для постоянных покупателей действует накопительная система скидок. Следите за новостями на нашем сайте и в социальных сетях!
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingFour">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                    Что делать, если товар не подошел или оказался бракованным?
+                </button>
+            </h2>
+            <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    Вы можете вернуть или обменять товар надлежащего качества в течение 14 дней, не считая дня покупки, если он не был в употреблении, сохранены его товарный вид, потребительские свойства, пломбы, фабричные ярлыки, а также имеется товарный чек или кассовый чек либо иной подтверждающий оплату указанного товара документ. В случае обнаружения брака, пожалуйста, свяжитесь с нами по телефону или электронной почте, и мы поможем решить проблему.
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %} 

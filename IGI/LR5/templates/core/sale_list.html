@@ -1,0 +1,115 @@
+{% extends 'base.html' %}  {# Предполагается, что у вас есть base.html #}
+{% load core_extras %} {# Загружаем наши кастомные теги/фильтры #}
+
+{% block title %}Список Заказов{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Список Заказов</h1>
+        {% if user.is_superuser or user.is_staff %}
+            <a href="{% url 'core:statistics' %}" class="btn btn-secondary">Перейти к Статистике</a>
+        {% endif %}
+    </div>
+
+    {# Отображение статистики для администраторов и сотрудников (на основе Order) #}
+    {% if user.is_superuser or user.is_staff %}
+        {% if total_revenue is not None and total_sales_count is not None %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    Статистика по Заказам
+                </div>
+                <div class="card-body">
+                    <p>Общая выручка по заказам: {{ total_revenue }} руб.</p>
+                    <p>Общее количество заказов: {{ total_sales_count }}</p>
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+
+    {% if orders %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID Заказа</th>
+                    <th>Покупатель</th>
+                    <th>Дата создания (Local/UTC)</th>
+                    <th>Сумма</th>
+                    <th>Товары</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td>{{ order.id }}</td>
+                        <td>{{ order.customer.username }}</td>
+                        <td>
+                            {{ order.created_at|format_datetime_local:user_timezone }} ({{ user_timezone }})<br>
+                            {{ order.created_at|format_datetime_utc }} (UTC)
+                        </td>
+                        <td>{{ order.total }} руб.</td>
+                        <td>
+                            <ul>
+                            {% for item in order.items.all %}
+                                <li>{{ item.product.name }} - {{ item.quantity }} шт. по {{ item.price }} руб.</li>
+                            {% empty %}
+                                <li>Нет товаров</li>
+                            {% endfor %}
+                            </ul>
+                        </td>
+                        <td>
+                            <a href="{% url 'core:order-detail' order.pk %}" class="btn btn-sm btn-info">Детали</a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6">Пока нет ни одного заказа.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {# Пагинация #}
+        {% if is_paginated %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;</span>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <p>Пока нет ни одного заказа.</p>
+    {% endif %}
+</div>
+{% endblock %} 

@@ -1,0 +1,84 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load core_extras %}
+
+{% block title %}{{ page_title|default:"Статистика" }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Статистика</h1>
+        <a href="{% url 'core:sales-list' %}" class="btn btn-primary">Заказы</a>
+    </div>
+
+    <hr class="my-5">
+    <h2>Графики и Визуализации</h2>
+
+    <div class="charts-container row gy-4">
+        {# Топ-3 по количеству #}
+        <div class="col-lg-6 col-md-12">
+            <div class="card chart-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Топ-3 продаваемых товара (по количеству)</h5>
+                    <img src="{{ top_products_quantity_chart }}" class="img-fluid" alt="Топ-3 продаваемых товара (по количеству)">
+                </div>
+            </div>
+        </div>
+
+        {# Топ-3 по выручке #}
+        <div class="col-lg-6 col-md-12">
+            <div class="card chart-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Топ-3 продаваемых товара (по выручке)</h5>
+                    <img src="{{ top_products_revenue_chart }}" class="img-fluid" alt="Топ-3 продаваемых товара (по выручке)">
+                </div>
+            </div>
+        </div>
+
+        {# Популярность категорий #}
+        <div class="col-lg-6 col-md-12">
+            <div class="card chart-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Популярность категорий (кол-во)</h5>
+                    <img src="{{ category_popularity_chart }}" class="img-fluid" alt="Популярность категорий">
+                </div>
+            </div>
+        </div>
+
+        {# Прибыльность категорий #}
+        <div class="col-lg-6 col-md-12">
+            <div class="card chart-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Прибыльность категорий (сумма)</h5>
+                    <img src="{{ category_profitability_chart }}" class="img-fluid" alt="Прибыльность категорий">
+                </div>
+            </div>
+        </div>
+
+        {# Распределение товаров по всем категориям #}
+        <div class="col-lg-6 col-md-12">
+            <div class="card chart-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Распределение товаров по всем категориям</h5>
+                    <img src="{{ all_category_product_chart }}" class="img-fluid" alt="Распределение товаров по категориям">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chart-card .card-body {
+    padding: 1.25rem;
+}
+
+.chart-card img {
+    max-width: 100%;
+    height: auto;
+}
+
+.charts-container .card {
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %} 

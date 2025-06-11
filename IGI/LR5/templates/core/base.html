@@ -1,0 +1,85 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Зоомагазин{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul class="nav-menu">
+                <li><a href="{% url 'content:home' %}">Главная</a></li>
+                <li><a href="{% url 'content:about' %}">О компании</a></li>
+                <li><a href="{% url 'content:news-list' %}">Новости</a></li>
+                <li><a href="{% url 'core:product-list' %}">Каталог</a></li>
+                <li><a href="{% url 'content:faq' %}">Вопросы и ответы</a></li>
+                <li><a href="{% url 'content:contacts' %}">Контакты</a></li>
+                <li><a href="{% url 'content:vacancies' %}">Вакансии</a></li>
+                <li><a href="{% url 'content:review-list' %}">Отзывы</a></li>
+                <li><a href="{% url 'content:promotion_list' %}">Акции и промокоды</a></li>
+
+                {% if user.is_authenticated %}
+                    {% if user.is_superuser %}
+                        <li class="admin-menu">
+                            <a href="{% url 'admin:index' %}">Админ-панель</a>
+                        </li>
+                        {% if request.resolver_match.url_name != 'order-detail' and request.resolver_match.url_name != 'statistics' %}
+                        <li class="admin-menu">
+                            <a href="{% url 'core:statistics' %}">Статистика</a>
+                        </li>
+                        {% endif %}
+                    {% elif user.is_staff %}
+                        {% if request.resolver_match.url_name != 'order-detail' and request.resolver_match.url_name != 'statistics' %}
+                        <li>
+                            <a href="{% url 'core:statistics' %}">Статистика</a>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                        <li>
+                            <a href="{% url 'core:cart' %}">Корзина</a>
+                        </li>
+                    {% endif %}
+                    <li>
+                        <a href="{% url 'accounts:profile' %}">Профиль</a>
+                    </li>
+                    <li>
+                        <a href="{% url 'accounts:logout' %}">Выход</a>
+                    </li>
+                {% else %}
+                    <li>
+                        <a href="{% url 'accounts:login' %}">Вход</a>
+                    </li>
+                    <li>
+                        <a href="{% url 'accounts:register' %}">Регистрация</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; {% now "Y" %} Зоомагазин. Все права защищены.</p>
+        </div>
+    </footer>
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

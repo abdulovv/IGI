@@ -1,0 +1,107 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if object %}Редактирование промокода{% else %}Создание промокода{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="promo-form-page">
+    <div class="page-header">
+        <h1>
+            {% if object %}
+                Редактирование промокода {{ object.code }}
+            {% else %}
+                Создание нового промокода
+            {% endif %}
+        </h1>
+    </div>
+
+    <div class="form-container">
+        <form method="post" class="promo-form">
+            {% csrf_token %}
+
+            <div class="form-section">
+                <h2>Основная информация</h2>
+                
+                <div class="form-group">
+                    <label for="{{ form.code.id_for_label }}">Код промокода*</label>
+                    {{ form.code }}
+                    {% if form.code.errors %}
+                        <div class="error-message">{{ form.code.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.description.id_for_label }}">Описание</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <div class="error-message">{{ form.description.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Параметры скидки</h2>
+                
+                <div class="form-group">
+                    <label for="{{ form.discount_amount.id_for_label }}">Сумма скидки (фиксированная)*</label>
+                    {{ form.discount_amount }}
+                    {% if form.discount_amount.errors %}
+                        <div class="error-message">{{ form.discount_amount.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.min_order_amount.id_for_label }}">Минимальная сумма заказа</label>
+                    {{ form.min_order_amount }}
+                    {% if form.min_order_amount.errors %}
+                        <div class="error-message">{{ form.min_order_amount.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Срок действия</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.valid_from.id_for_label }}">Действует с*</label>
+                        {{ form.valid_from }}
+                        {% if form.valid_from.errors %}
+                            <div class="error-message">{{ form.valid_from.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.valid_until.id_for_label }}">Действует до*</label>
+                        {{ form.valid_until }}
+                        {% if form.valid_until.errors %}
+                            <div class="error-message">{{ form.valid_until.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if form.is_active %}
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        {{ form.is_active }}
+                        <span>Активен</span>
+                    </label>
+                    {% if form.is_active.errors %}
+                        <div class="error-message">{{ form.is_active.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="button">
+                    {% if object %}Сохранить изменения{% else %}Создать промокод{% endif %}
+                </button>
+                <a href="{% url 'core:promo-list' %}" class="button secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

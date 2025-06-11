@@ -1,0 +1,124 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Управление промокодами{% endblock %}
+
+{% block content %}
+<div class="promo-list-page">
+    <div class="page-header">
+        <h1>Управление промокодами</h1>
+        <a href="{% url 'core:promo-create' %}" class="button">Создать промокод</a>
+    </div>
+
+    <div class="search-section">
+        <form method="get" class="search-form">
+            <input type="text" name="search" placeholder="Поиск по коду или описанию" 
+                   value="{{ request.GET.search }}">
+            <button type="submit" class="button">Найти</button>
+            {% if request.GET.search %}
+                <a href="{% url 'core:promo-list' %}" class="button secondary">Сбросить</a>
+            {% endif %}
+        </form>
+    </div>
+
+    {% if promos %}
+        <div class="promos-grid">
+            {% for promo in promos %}
+            <div class="promo-card {% if not promo.is_active %}inactive{% endif %}">
+                <div class="promo-header">
+                    <h2>{{ promo.code }}</h2>
+                    <div class="promo-status">
+                        {% if promo.is_active %}
+                            <span class="status active">Активен</span>
+                        {% else %}
+                            <span class="status inactive">Неактивен</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="promo-info">
+                    {% if promo.description %}
+                    <div class="info-group">
+                        <label>Описание:</label>
+                        <p>{{ promo.description }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="info-group">
+                        <label>Скидка:</label>
+                        <span>
+                            {{ promo.discount_amount }} руб.
+                        </span>
+                    </div>
+
+                    {% if promo.min_order_amount %}
+                    <div class="info-group">
+                        <label>Мин. сумма заказа:</label>
+                        <span>{{ promo.min_order_amount }} руб.</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="info-group dates">
+                        <div>
+                            <label>Действует с:</label>
+                            <span>{{ promo.valid_from|date:"d.m.Y H:i" }}</span>
+                        </div>
+                        {% if promo.valid_until %}
+                        <div>
+                            <label>До:</label>
+                            <span>{{ promo.valid_until|date:"d.m.Y H:i" }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="promo-actions">
+                    <a href="{% url 'core:promo-update' promo.id %}" class="button">
+                        Редактировать
+                    </a>
+                    <a href="{% url 'core:promo-delete' promo.id %}" class="button danger">
+                        Удалить
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if is_paginated %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                    &laquo; Первая
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                    Предыдущая
+                </a>
+            {% endif %}
+
+            <span class="current">
+                Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                    Следующая
+                </a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                    Последняя &raquo;
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="no-promos">
+            {% if request.GET.search %}
+                <p>Промокоды не найдены</p>
+                <a href="{% url 'core:promo-list' %}" class="button">Сбросить поиск</a>
+            {% else %}
+                <p>Нет созданных промокодов</p>
+                <a href="{% url 'core:promo-create' %}" class="button">Создать промокод</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

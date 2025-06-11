@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}API{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Random Dog API -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Random Dog API</h5>
+                </div>
+                <div class="card-body text-center">
+                    <img id="dogImage" src="" alt="Random Dog" class="img-fluid rounded mb-3" style="max-height: 300px;">
+                    <button onclick="getNewDog()" class="btn btn-primary">Get New Dog</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cat Facts API -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Cat Facts API</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-cat fa-3x text-primary"></i>
+                    </div>
+                    <div id="catFact" class="mb-3">
+                        <p class="lead">Loading...</p>
+                    </div>
+                    <div class="text-center mt-3">
+                        <button onclick="getNewCatFact()" class="btn btn-primary">Get New Fact</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function getNewDog() {
+    try {
+        const response = await fetch('https://dog.ceo/api/breeds/image/random');
+        const data = await response.json();
+        document.getElementById('dogImage').src = data.message;
+    } catch (error) {
+        console.error('Error fetching dog image:', error);
+    }
+}
+
+async function getNewCatFact() {
+    try {
+        const response = await fetch('https://catfact.ninja/fact');
+        const data = await response.json();
+        document.getElementById('catFact').innerHTML = `<p class="lead">${data.fact}</p>`;
+    } catch (error) {
+        console.error('Error fetching cat fact:', error);
+    }
+}
+
+// Initial load
+window.addEventListener('load', () => {
+    getNewDog();
+    getNewCatFact();
+});
+</script>
+
+<!-- Add Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %} 

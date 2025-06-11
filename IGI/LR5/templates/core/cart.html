@@ -1,0 +1,139 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Корзина{% endblock %}
+
+{% block content %}
+<div class="cart-page">
+    <h1>Корзина</h1>
+    
+    {% if cart_items %}
+        <div class="cart-content">
+            <div class="cart-items" id="cart-items-container">
+                {% include 'core/cart_items.html' %}
+            </div>
+            
+            <div class="cart-summary">
+                <div class="promo-code">
+                    <h3>Промокод</h3>
+                    <div class="promo-form">
+                        <input type="text" id="promo-code" placeholder="Введите промокод">
+                        <button class="button" onclick="applyPromo()">Применить</button>
+                    </div>
+                    <div id="promo-message"></div>
+                </div>
+                
+                <div class="cart-totals">
+                    <div class="subtotal">
+                        <span>Сумма:</span>
+                        <span id="cart-subtotal">{{ cart.total_price }} руб.</span>
+                    </div>
+                    <div class="discount" id="discount-row" style="display: none;">
+                        <span>Скидка:</span>
+                        <span id="discount-amount">0 руб.</span>
+                    </div>
+                    <div class="total">
+                        <span>Итого:</span>
+                        <span id="cart-total">{{ cart.total_price }} руб.</span>
+                    </div>
+                </div>
+                
+                <a href="{% url 'core:checkout' %}" class="button checkout-button">Оформить заказ</a>
+            </div>
+        </div>
+    {% else %}
+        <div class="empty-cart">
+            <p>Ваша корзина пуста</p>
+            <a href="{% url 'core:product-list' %}" class="button">Перейти к покупкам</a>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateCartItem(itemId, action) {
+    const updateUrl = `{% url 'core:update-cart-item' item_id=0 %}`.replace('0', itemId);
+    fetch(updateUrl, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: new URLSearchParams({
+            'action': action
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            document.getElementById('cart-items-container').innerHTML = data.cart_html;
+            document.getElementById('cart-subtotal').textContent = data.cart_total + ' руб.';
+            document.getElementById('cart-total').textContent = data.cart_total + ' руб.';
+            
+            // Обновляем счетчик товаров в шапке, если он есть
+            const cartCounter = document.getElementById('cart-counter');
+            if (cartCounter) {
+                cartCounter.textContent = data.cart_items_count;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при обновлении корзины');
+    });
+}
+
+function applyPromo() {
+    const promoCode = document.getElementById('promo-code').value;
+    const messageDiv = document.getElementById('promo-message');
+    
+    const applyPromoUrl = `{% url 'core:apply-promo' %}`;
+    fetch(applyPromoUrl, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: new URLSearchParams({
+            'code': promoCode
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            messageDiv.innerHTML = `<div class="error">${data.error}</div>`;
+            document.getElementById('discount-row').style.display = 'none';
+        } else {
+            messageDiv.innerHTML = `<div class="success">${data.message}</div>`;
+            document.getElementById('discount-row').style.display = 'flex';
+            document.getElementById('discount-amount').textContent = data.discount + ' руб.';
+            document.getElementById('cart-total').textContent = data.total_with_discount + ' руб.';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        messageDiv.innerHTML = '<div class="error">Произошла ошибка при применении промокода</div>';
+    });
+}
+
+// Функция для получения CSRF токена из cookies
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %} 

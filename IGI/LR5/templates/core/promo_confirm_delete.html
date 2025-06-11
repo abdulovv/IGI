@@ -1,0 +1,48 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Удаление промокода{% endblock %}
+
+{% block content %}
+<div class="delete-confirmation-page">
+    <div class="confirmation-box">
+        <h1>Удаление промокода</h1>
+        
+        <div class="warning-message">
+            <p>Вы действительно хотите удалить промокод <strong>{{ object.code }}</strong>?</p>
+            <p class="note">Это действие нельзя будет отменить.</p>
+        </div>
+
+        <div class="promo-info">
+            <div class="info-group">
+                <label>Описание:</label>
+                <p>{{ object.description|default:"Нет описания" }}</p>
+            </div>
+
+            <div class="info-group">
+                <label>Скидка:</label>
+                <span>
+                    {% if object.discount_type == 'percent' %}
+                        {{ object.discount_value }}%
+                    {% else %}
+                        {{ object.discount_value }} руб.
+                    {% endif %}
+                </span>
+            </div>
+
+            <div class="info-group">
+                <label>Использований:</label>
+                <span>{{ object.uses_count }}</span>
+            </div>
+        </div>
+
+        <form method="post" class="delete-form">
+            {% csrf_token %}
+            <div class="form-actions">
+                <button type="submit" class="button danger">Удалить</button>
+                <a href="{% url 'core:promo-list' %}" class="button secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

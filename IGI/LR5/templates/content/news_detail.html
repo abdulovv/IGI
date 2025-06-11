@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ object.title }} - Новости - Зоомагазин{% endblock %}
+
+{% block content %}
+<article class="news-detail">
+    <header class="news-header">
+        <h1>{{ object.title }}</h1>
+        <div class="meta">
+            <time datetime="{{ object.created_at|date:'Y-m-d' }}" class="date">
+                {{ object.created_at|date:"d.m.Y" }}
+            </time>
+            {% if object.author %}
+                <span class="author">
+                    Автор: {{ object.author.get_full_name|default:object.author.username }}
+                </span>
+            {% endif %}
+        </div>
+    </header>
+
+    {% if object.image %}
+        <div class="news-image">
+            <img src="{{ object.image.url }}" alt="{{ object.title }}">
+        </div>
+    {% endif %}
+
+    <div class="news-content">
+        {{ object.content|linebreaks }}
+    </div>
+
+    {% if related_news %}
+        <section class="related-news">
+            <h2>Другие новости</h2>
+            <div class="news-grid">
+                {% for news in related_news %}
+                    <article class="news-card">
+                        {% if news.image %}
+                            <img src="{{ news.image.url }}" alt="{{ news.title }}" class="news-image">
+                        {% endif %}
+                        <div class="news-content">
+                            <h3>{{ news.title }}</h3>
+                            <p class="date">{{ news.created_at|date:"d.m.Y" }}</p>
+                            <p class="excerpt">{{ news.content|truncatewords:20 }}</p>
+                            <a href="{% url 'content:news-detail' news.pk %}" class="button">Читать далее</a>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    <div class="news-navigation">
+        {% if previous_news %}
+            <a href="{% url 'content:news-detail' previous_news.pk %}" class="prev-news">
+                &larr; {{ previous_news.title }}
+            </a>
+        {% endif %}
+        
+        {% if next_news %}
+            <a href="{% url 'content:news-detail' next_news.pk %}" class="next-news">
+                {{ next_news.title }} &rarr;
+            </a>
+        {% endif %}
+    </div>
+</article>
+
+<style>
+.news-detail {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.news-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.news-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.meta {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.meta > * + * {
+    margin-left: 1rem;
+}
+
+.news-image {
+    margin: 2rem 0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.news-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.news-content {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #212529;
+}
+
+.news-content p {
+    margin-bottom: 1.5rem;
+}
+
+.related-news {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.related-news h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.news-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.news-navigation a {
+    color: #007bff;
+    text-decoration: none;
+    max-width: 45%;
+}
+
+.news-navigation a:hover {
+    text-decoration: underline;
+}
+
+.prev-news {
+    text-align: left;
+}
+
+.next-news {
+    text-align: right;
+}
+
+@media (max-width: 768px) {
+    .news-header h1 {
+        font-size: 2rem;
+    }
+
+    .news-content {
+        font-size: 1rem;
+    }
+}
+</style>
+{% endblock %} 
