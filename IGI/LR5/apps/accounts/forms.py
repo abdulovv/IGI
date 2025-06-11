@@ -46,7 +46,7 @@ class CustomUserCreationForm(UserCreationForm):
 
             # Паттерны для проверки белорусских номеров
             patterns = [
-                r'^\+375(17|29|33|44)\d{7}$'
+                r'^\+375(17|29|25|44)\d{7}$'
             ]
 
             valid_format = any(re.match(pattern, cleaned_number) for pattern in patterns)
